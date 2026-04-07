@@ -46,7 +46,7 @@ export default function ChronicleEditor() {
         // Ensure chapters are sorted
         const sortedSess = sess.map(s => ({
           ...s,
-          chapters: (s.chapters || []).sort((a,b) => a.order_index - b.order_index)
+          chapters: (s.chapters || []).sort((a: Chapter, b: Chapter) => a.order_index - b.order_index)
         }));
         setSessions(sortedSess);
       }
@@ -222,7 +222,7 @@ Regras:
     }).select().single();
     
     if (data) {
-      setSessions(sessions.map(s => s.id === sessionId ? { ...s, chapters: [...(s.chapters || []), data].sort((a,b) => a.order_index - b.order_index) } : s));
+      setSessions(sessions.map(s => s.id === sessionId ? { ...s, chapters: [...(s.chapters || []), data].sort((a: Chapter, b: Chapter) => a.order_index - b.order_index) } : s));
     }
   };
 
@@ -236,7 +236,7 @@ Regras:
     const session = sessions.find(s => s.id === sessionId);
     if (!session || !session.chapters) return;
     
-    const chapters = [...session.chapters].sort((a,b) => a.order_index - b.order_index);
+    const chapters = [...session.chapters].sort((a: Chapter, b: Chapter) => a.order_index - b.order_index);
     const idx = chapters.findIndex(c => c.id === chapterId);
     if (direction === 'up' && idx > 0) {
       [chapters[idx], chapters[idx-1]] = [chapters[idx-1], chapters[idx]];
