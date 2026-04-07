@@ -151,7 +151,7 @@ export default function Adventure() {
                 <p className="text-sm font-cinzel text-parchment leading-none">{chronicle.title}</p>
              </div>
              <div className="w-[1px] h-8 bg-gold/10" />
-             <button onClick={() => navigate('/rpg')} className="text-gold/40 hover:text-gold transition-colors p-2 underline text-xs uppercase tracking-widest font-bold">Voltar ao Códice</button>
+             <button onClick={() => navigate('/')} className="text-gold/40 hover:text-gold transition-colors p-2 underline text-xs uppercase tracking-widest font-bold">Voltar ao Códice</button>
           </div>
         </header>
 

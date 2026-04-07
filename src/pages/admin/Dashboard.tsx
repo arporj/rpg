@@ -31,7 +31,7 @@ export default function Dashboard() {
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
-    navigate('/rpg/admin');
+    navigate('/admin');
   };
 
   if (loading) {
@@ -91,20 +91,20 @@ export default function Dashboard() {
                      Mestre: {chronicle.master_name}
                    </p>
                    <p className="text-xs text-neutral-500">
-                     URL: /rpg/{chronicle.slug}
+                     URL: /{chronicle.slug}
                    </p>
                  </div>
 
                  <div className="grid grid-cols-2 gap-4">
                     <button 
-                      onClick={() => navigate(`/rpg/admin/chronicle/${chronicle.id}`)}
+                      onClick={() => navigate(`/admin/chronicle/${chronicle.id}`)}
                       className="bg-neutral-800 hover:bg-neutral-700 p-2 rounded flex items-center justify-center gap-2 text-sm transition-colors"
                     >
                       <Settings className="w-4 h-4" />
                       Editar
                     </button>
                     <button 
-                      onClick={() => window.open(`/rpg/${chronicle.slug}`, '_blank')}
+                      onClick={() => window.open(`/${chronicle.slug}`, '_blank')}
                       className="bg-gold/10 hover:bg-gold/20 p-2 border border-gold/20 rounded flex items-center justify-center gap-2 text-sm text-gold transition-colors"
                     >
                       <BookOpen className="w-4 h-4" />

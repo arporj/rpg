@@ -278,7 +278,7 @@ Regras:
     <div className="min-h-screen bg-neutral-900 text-white font-sans">
       <header className="bg-ink border-b border-gold/20 p-4 sticky top-0 z-40 flex items-center justify-between shadow-xl">
         <div className="flex items-center gap-4">
-          <button onClick={() => navigate('/rpg/admin/dashboard')} className="hover:text-gold transition-colors p-2"><ArrowLeft /></button>
+          <button onClick={() => navigate('/admin/dashboard')} className="hover:text-gold transition-colors p-2"><ArrowLeft /></button>
           <div className="flex flex-col">
             <h1 className="font-cinzel text-xl text-gold leading-tight">{chronicle.title}</h1>
             <span className="text-[10px] uppercase tracking-[0.2em] text-neutral-500">Painel de Controle</span>

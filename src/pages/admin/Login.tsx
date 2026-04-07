@@ -25,7 +25,7 @@ export default function Login() {
         ? 'Email ou senha incorretos.' 
         : loginError.message);
     } else {
-      navigate('/rpg/admin/dashboard');
+      navigate('/admin/dashboard');
     }
     setLoading(false);
   };

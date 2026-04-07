@@ -65,7 +65,7 @@ export default function Home() {
           {chronicles.map((chronicle) => (
             <button
               key={chronicle.id}
-              onClick={() => navigate(`/rpg/${chronicle.slug}`)}
+              onClick={() => navigate(`/${chronicle.slug}`)}
               className="group bg-ink/40 border border-gold/10 p-8 rounded-sm hover:border-gold/50 transition-all duration-500 flex flex-col md:flex-row items-center justify-between gap-6 hover:shadow-[0_0_30px_rgba(212,175,55,0.1)] relative overflow-hidden"
             >
               {/* Hover Background */}
@@ -107,7 +107,7 @@ export default function Home() {
       {/* Footer */}
       <footer className="py-12 border-t border-gold/10 text-center opacity-40 hover:opacity-100 transition-opacity">
         <button 
-          onClick={() => navigate('/rpg/admin')}
+          onClick={() => navigate('/admin')}
           className="text-xs uppercase tracking-widest text-gold hover:underline"
         >
           Acesso Restrito ao Mestre

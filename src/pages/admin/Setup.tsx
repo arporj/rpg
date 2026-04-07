@@ -42,7 +42,7 @@ export default function Setup() {
     } else {
       // Success! Move to login or dashboard
       alert('Usuário Admin criado com sucesso! Use este login para acessar o painel.');
-      navigate('/rpg/admin');
+      navigate('/admin');
     }
     setLoading(false);
   };
@@ -54,7 +54,7 @@ export default function Setup() {
           <AlertCircle className="w-16 h-16 text-red-600 mx-auto mb-4" />
           <h2 className="text-2xl font-cinzel text-ink mb-4">Setup já realizado</h2>
           <p className="text-neutral-600">A área de configuração inicial não está mais disponível.</p>
-          <button onClick={() => navigate('/rpg/admin')} className="mt-6 text-gold underline">Ir para Login</button>
+          <button onClick={() => navigate('/admin')} className="mt-6 text-gold underline">Ir para Login</button>
         </div>
       </div>
     );

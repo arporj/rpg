@@ -11,18 +11,17 @@ function App() {
   return (
     <Routes>
       {/* Public Routes */}
-      <Route path="/rpg" element={<Home />} />
-      <Route path="/rpg/:slug" element={<Adventure />} />
+      <Route path="/" element={<Home />} />
+      <Route path="/:slug" element={<Adventure />} />
       
       {/* Admin Routes */}
-      <Route path="/rpg/admin" element={<Login />} />
-      <Route path="/rpg/admin/setup" element={<Setup />} />
-      <Route path="/rpg/admin/dashboard" element={<Dashboard />} />
-      <Route path="/rpg/admin/chronicle/:id" element={<ChronicleEditor />} />
+      <Route path="/admin" element={<Login />} />
+      <Route path="/admin/setup" element={<Setup />} />
+      <Route path="/admin/dashboard" element={<Dashboard />} />
+      <Route path="/admin/chronicle/:id" element={<ChronicleEditor />} />
       
       {/* Redirects */}
-      <Route path="/" element={<Navigate to="/rpg" replace />} />
-      <Route path="*" element={<Navigate to="/rpg" replace />} />
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 }
