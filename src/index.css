@@ -1,0 +1,29 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --parchment: #f4e4bc;
+  --ink: #1c1917;
+  --gold: #d97706;
+}
+
+body {
+  @apply bg-ink text-ink font-inter antialiased;
+  background-image: url('https://www.transparenttextures.com/patterns/papyros.png');
+}
+
+.font-cinzel { font-family: 'Cinzel', serif; }
+.font-serif { font-family: 'Merriweather', serif; }
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: var(--ink);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--gold);
+  border-radius: 4px;
+}
