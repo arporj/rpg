@@ -339,9 +339,9 @@ Regras:
         </div>
       </header>
 
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
         {/* Sidebar */}
-        <aside className="w-64 bg-ink border-r border-gold/10 flex flex-col py-8 overflow-y-auto">
+        <aside className="w-full md:w-64 bg-ink border-b md:border-b-0 md:border-r border-gold/10 flex flex-row md:flex-col py-2 md:py-8 overflow-x-auto md:overflow-y-auto custom-scrollbar shrink-0">
           {[
             { id: 'sessions', label: 'Jornada', icon: Book },
             { id: 'players', label: 'Grupo', icon: Users },
@@ -350,16 +350,16 @@ Regras:
             <button 
               key={tab.id}
               onClick={() => handleTabChange(tab.id as any)}
-              className={`px-8 py-4 flex items-center gap-4 font-cinzel tracking-widest text-sm transition-all border-l-2 relative ${
+              className={`px-4 md:px-8 py-3 md:py-4 flex items-center gap-3 md:gap-4 font-cinzel tracking-[0.1em] md:tracking-widest text-xs md:text-sm transition-all border-b-2 md:border-b-0 md:border-l-2 relative whitespace-nowrap ${
                 activeTab === tab.id 
                   ? 'text-gold border-gold bg-gold/5' 
                   : 'text-neutral-500 border-transparent hover:text-neutral-300 hover:bg-white/5'
               }`}
             >
-              <tab.icon size={18} />
+              <tab.icon size={16} className="md:w-[18px] md:h-[18px]" />
               {tab.label}
               {(tab.id === 'sessions' ? isDirty.sessions : tab.id === 'players' ? isDirty.players : isDirty.aventura) && (
-                <div className="absolute right-4 w-1.5 h-1.5 rounded-full bg-gold animate-pulse" />
+                <div className="absolute right-2 top-2 md:right-4 md:top-1/2 md:-translate-y-1/2 w-1.5 h-1.5 rounded-full bg-gold animate-pulse" />
               )}
             </button>
           ))}
@@ -370,10 +370,10 @@ Regras:
           <div className="max-w-5xl mx-auto">
             {activeTab === 'sessions' && (
               <div className="space-y-12 pb-20">
-                <div className="sticky top-0 z-40 bg-neutral-900/95 backdrop-blur-md p-6 border-b border-gold/10 flex justify-between items-center shadow-xl">
+                <div className="sticky top-0 z-40 bg-neutral-900/95 backdrop-blur-md p-4 md:p-6 border-b border-gold/10 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-xl">
                   <div>
-                    <h2 className="text-xl font-cinzel text-gold uppercase tracking-tighter">Estrutura das Crônicas</h2>
-                    <p className="text-sm text-neutral-500 italic">Organize suas sessões e capítulos narrativos</p>
+                    <h2 className="text-lg md:text-xl font-cinzel text-gold uppercase tracking-tighter">Estrutura das Crônicas</h2>
+                    <p className="text-[10px] md:text-sm text-neutral-500 italic">Organize suas sessões e capítulos narrativos</p>
                   </div>
                   <div className="flex gap-4">
                     <button onClick={addSession} className="bg-neutral-800 hover:bg-neutral-700 px-4 py-2 rounded-sm flex items-center gap-2 border border-gold/30 text-gold font-bold text-sm transition-colors">
@@ -390,7 +390,7 @@ Regras:
                   </div>
                 </div>
 
-                <div className="p-10 space-y-12">
+                <div className="p-4 md:p-10 space-y-8 md:space-y-12">
                   {sessions.length === 0 && (
                     <div className="text-center py-20 border-2 border-dashed border-neutral-800 rounded">
                       <p className="text-neutral-500 font-cinzel">Nenhuma sessão registrada. Comece criando uma!</p>
@@ -399,8 +399,8 @@ Regras:
 
                   {sessions.map((session) => (
                     <div key={session.id} className="bg-ink/60 border border-gold/10 rounded-sm overflow-hidden shadow-2xl">
-                      <div className="bg-ink p-4 border-b border-gold/10 flex justify-between items-center">
-                        <div className="flex gap-6 items-center flex-1">
+                      <div className="bg-ink p-4 border-b border-gold/10 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                        <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 items-start sm:items-center flex-1 w-full">
                           <div className="flex flex-col">
                             <label className="text-[10px] text-gold/40 font-bold uppercase mb-1">Título da Sessão</label>
                             <input 
@@ -438,12 +438,12 @@ Regras:
                         </div>
                       </div>
 
-                      <div className="p-6 space-y-6 bg-black/20">
+                      <div className="p-4 md:p-6 space-y-6 bg-black/20">
                         {session.chapters?.length === 0 && <p className="text-center text-neutral-600 italic text-sm py-4">Sessão vazia</p>}
                         {session.chapters?.map((chapter) => (
-                          <div key={chapter.id} className="bg-neutral-800/40 p-5 rounded-sm border border-neutral-700/50 group hover:border-gold/20 transition-all">
-                            <div className="flex gap-6 items-start">
-                              <div className="flex flex-col gap-2 pt-2">
+                          <div key={chapter.id} className="bg-neutral-800/40 p-3 md:p-5 rounded-sm border border-neutral-700/50 group hover:border-gold/20 transition-all">
+                            <div className="flex flex-col md:flex-row gap-4 md:gap-6 items-start">
+                              <div className="flex flex-row md:flex-col gap-2 pt-0 md:pt-2 w-full md:w-auto justify-end md:justify-start">
                                 <button onClick={() => moveChapter(session.id, chapter.id, 'up')} className="p-1 hover:text-gold text-neutral-600 transition-colors"><ChevronUp size={20}/></button>
                                 <button onClick={() => moveChapter(session.id, chapter.id, 'down')} className="p-1 hover:text-gold text-neutral-600 transition-colors"><ChevronDown size={20}/></button>
                               </div>
@@ -540,10 +540,10 @@ Regras:
 
             {activeTab === 'players' && (
               <div className="space-y-10 pb-20">
-                <div className="sticky top-0 z-40 bg-neutral-900/95 backdrop-blur-md p-6 border-b border-gold/10 flex justify-between items-center shadow-xl">
+                <div className="sticky top-0 z-40 bg-neutral-900/95 backdrop-blur-md p-4 md:p-6 border-b border-gold/10 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-xl">
                   <div>
-                    <h2 className="text-xl font-cinzel text-gold uppercase tracking-tighter">O Grupo de Aventureiros</h2>
-                    <p className="text-sm text-neutral-500 italic">Gerencie os personagens que fazem parte desta jornada</p>
+                    <h2 className="text-lg md:text-xl font-cinzel text-gold uppercase tracking-tighter">O Grupo de Aventureiros</h2>
+                    <p className="text-[10px] md:text-sm text-neutral-500 italic">Gerencie os personagens que fazem parte desta jornada</p>
                   </div>
                   <div className="flex gap-4">
                     <button onClick={addPlayer} className="bg-neutral-800 hover:bg-neutral-700 px-4 py-2 rounded-sm flex items-center gap-2 border border-gold/30 text-gold font-bold text-sm transition-colors">
@@ -560,7 +560,7 @@ Regras:
                   </div>
                 </div>
 
-                <div className="p-10 grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="p-4 md:p-10 grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
                   {players.map((p) => {
                     const systemLabel = (chronicle as any).systems?.advancement_label || 'Nível';
                     return (
@@ -572,9 +572,9 @@ Regras:
                           <Trash2 size={18} />
                         </button>
 
-                        <div className="flex flex-col gap-8">
-                          <div className="flex items-center gap-6">
-                            <div className="relative group/avatar">
+                        <div className="flex flex-col gap-6 md:gap-8">
+                          <div className="flex flex-col sm:flex-row items-center gap-6">
+                            <div className="relative group/avatar shrink-0">
                               <div className="w-24 h-24 rounded-full border-2 border-gold/20 overflow-hidden bg-neutral-800 shadow-inner">
                                 {p.face_url ? (
                                   <img 
