@@ -281,8 +281,8 @@ export default function Adventure() {
 
                     <div className="h-[1px] w-full bg-gradient-to-r from-gold/30 to-transparent" />
                     
-                    {/* Race, Class, Level Grid */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 py-4">
+                    {/* Race, Class, Level Column */}
+                    <div className="flex flex-col gap-6 py-4 max-w-xs">
                        <div className="space-y-1">
                           <p className="text-[10px] uppercase text-gold/40 font-bold tracking-widest">Raça</p>
                           <p className="text-xl font-cinzel text-parchment">{selectedPlayer.race || "—"}</p>

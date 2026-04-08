@@ -586,8 +586,8 @@ Regras:
                           </div>
 
                           {/* Character Details */}
-                          <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
-                            <div>
+                          <div className="flex-1 flex flex-col gap-4 items-start max-w-xs">
+                            <div className="w-full">
                               <label className="text-[10px] uppercase text-neutral-600 font-bold block mb-1 tracking-widest">Raça</label>
                               <input 
                                 value={p.race || ''} 
@@ -596,7 +596,7 @@ Regras:
                                 className="w-full bg-neutral-800/30 border-b border-neutral-700/50 focus:border-gold outline-none px-2 py-1 text-neutral-200 text-sm"
                               />
                             </div>
-                            <div>
+                            <div className="w-full">
                               <label className="text-[10px] uppercase text-neutral-600 font-bold block mb-1 tracking-widest">Classe</label>
                               <input 
                                 value={p.class || ''} 
@@ -605,7 +605,7 @@ Regras:
                                 className="w-full bg-neutral-800/30 border-b border-neutral-700/50 focus:border-gold outline-none px-2 py-1 text-neutral-200 text-sm"
                               />
                             </div>
-                            <div>
+                            <div className="w-full">
                               <label className="text-[10px] uppercase text-neutral-600 font-bold block mb-1 tracking-widest">{systemLabel}</label>
                               <input 
                                 value={p.level_points || ''} 
@@ -614,14 +614,14 @@ Regras:
                                 className="w-full bg-neutral-800/30 border-b border-neutral-700/50 focus:border-gold outline-none px-2 py-1 text-neutral-200 text-sm"
                               />
                             </div>
-                            <div className="md:col-span-3">
+                            <div className="mt-2">
                               <label className="flex items-center gap-2 text-[10px] font-bold text-gold cursor-pointer hover:text-yellow-400">
                                 <input 
                                  type="checkbox" 
                                  checked={p.is_active} 
                                  onChange={(e) => updatePlayer(p.id, { is_active: e.target.checked })}
                                  className="accent-gold w-4 h-4" 
-                                /> PERSONAGEM ATIVO NO GRUPO
+                                /> PERSONAGEM ATIVO
                               </label>
                             </div>
                           </div>
