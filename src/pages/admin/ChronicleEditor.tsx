@@ -124,7 +124,7 @@ Regras:
       const userContent = `Título: ${chapter.title || "Sem título"}\nConteúdo: ${chapter.content || ""}`;
 
       const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
+        model: 'gemini-2.0-flash',
         contents: userContent,
         config: {
           systemInstruction: systemPrompt,
@@ -150,7 +150,8 @@ Regras:
 
   // --- Section Saves ---
   const handleTabChange = (newTab: 'sessions' | 'players' | 'aventura') => {
-    if (isDirty[activeTab] && !window.confirm("Você tem alterações não salvas nesta aba. Deseja sair sem salvar?")) {
+    const hasChanges = isDirty.sessions || isDirty.players || isDirty.aventura;
+    if (hasChanges && !window.confirm("Você tem alterações não salvas. Deseja sair sem salvar?")) {
       return;
     }
     setActiveTab(newTab);
@@ -295,6 +296,7 @@ Regras:
 
     const updated = chapters.map((c, i) => ({ ...c, order_index: i }));
     setSessions(sessions.map(s => s.id === sessionId ? { ...s, chapters: updated } : s));
+    setIsDirty({ ...isDirty, sessions: true });
   };
 
   // --- Player Actions ---
@@ -323,7 +325,7 @@ Regras:
 
   return (
     <div className="min-h-screen bg-neutral-900 text-white font-sans flex flex-col">
-      <header className="bg-ink border-b border-gold/20 p-4 sticky top-0 z-40 flex items-center justify-between shadow-xl">
+      <header className="bg-ink border-b border-gold/20 p-4 sticky top-0 z-50 flex items-center justify-between shadow-xl">
         <div className="flex items-center gap-4">
           <button onClick={() => navigate('/admin/dashboard')} className="hover:text-gold transition-colors p-2"><ArrowLeft /></button>
           <div className="flex flex-col">
@@ -356,7 +358,7 @@ Regras:
             >
               <tab.icon size={18} />
               {tab.label}
-              {isDirty[tab.id as keyof typeof isDirty] && (
+              {(tab.id === 'sessions' ? isDirty.sessions : tab.id === 'players' ? isDirty.players : isDirty.aventura) && (
                 <div className="absolute right-4 w-1.5 h-1.5 rounded-full bg-gold animate-pulse" />
               )}
             </button>
@@ -364,11 +366,11 @@ Regras:
         </aside>
 
         {/* Main Content Area */}
-        <main className="flex-1 overflow-y-auto bg-neutral-900 custom-scrollbar">
-          <div className="max-w-5xl mx-auto p-10">
+        <main className="flex-1 overflow-y-auto bg-neutral-900 custom-scrollbar relative">
+          <div className="max-w-5xl mx-auto">
             {activeTab === 'sessions' && (
-              <div className="space-y-12">
-                <div className="flex justify-between items-center bg-neutral-800/30 p-6 rounded-sm border border-neutral-700/50">
+              <div className="space-y-12 pb-20">
+                <div className="sticky top-0 z-20 bg-neutral-900/95 backdrop-blur-md p-6 border-b border-gold/10 flex justify-between items-center shadow-xl">
                   <div>
                     <h2 className="text-xl font-cinzel text-gold uppercase tracking-tighter">Estrutura das Crônicas</h2>
                     <p className="text-sm text-neutral-500 italic">Organize suas sessões e capítulos narrativos</p>
@@ -388,96 +390,94 @@ Regras:
                   </div>
                 </div>
 
-            {sessions.length === 0 && (
-              <div className="text-center py-20 border-2 border-dashed border-neutral-800 rounded">
-                <p className="text-neutral-500 font-cinzel">Nenhuma sessão registrada. Comece criando uma!</p>
-              </div>
-            )}
-
-            {sessions.map((session) => (
-              <div key={session.id} className="bg-ink/60 border border-gold/10 rounded-sm overflow-hidden shadow-2xl">
-                <div className="bg-ink p-4 border-b border-gold/10 flex justify-between items-center">
-                  <div className="flex gap-6 items-center flex-1">
-                    <div className="flex flex-col">
-                       <label className="text-[10px] text-gold/40 font-bold uppercase mb-1">Título da Sessão</label>
-                       <input 
-                        value={session.title} 
-                        onChange={(e) => {
-                          const newTitle = e.target.value;
-                          setSessions(sessions.map(s => s.id === session.id ? { ...s, title: newTitle } : s));
-                          setIsDirty({ ...isDirty, sessions: true });
-                        }}
-                        placeholder="Ex: O Despertar da Churrasqueira"
-                        className="bg-transparent border-b border-transparent focus:border-gold outline-none text-gold font-cinzel text-lg w-full"
-                      />
+                <div className="p-10 space-y-12">
+                  {sessions.length === 0 && (
+                    <div className="text-center py-20 border-2 border-dashed border-neutral-800 rounded">
+                      <p className="text-neutral-500 font-cinzel">Nenhuma sessão registrada. Comece criando uma!</p>
                     </div>
-                    <div className="flex flex-col">
-                       <label className="text-[10px] text-gold/40 font-bold uppercase mb-1">Data/Identificador</label>
-                       <input 
-                        value={session.date_str} 
-                        onChange={(e) => {
-                          const newDate = e.target.value;
-                          setSessions(sessions.map(s => s.id === session.id ? { ...s, date_str: newDate } : s));
-                          setIsDirty({ ...isDirty, sessions: true });
-                        }}
-                        placeholder="Ex: Dia 1"
-                        className="bg-transparent border-b border-transparent focus:border-gold outline-none text-neutral-400 text-sm italic"
-                      />
-                    </div>
-                  </div>
-                  <div className="flex gap-4">
-                    <button onClick={() => addChapter(session.id)} className="text-xs bg-gold/10 hover:bg-gold/20 text-gold px-4 py-2 rounded-sm border border-gold/20 transition-all font-bold">
-                      + CAPÍTULO
-                    </button>
-                    <button onClick={() => deleteSession(session.id)} className="p-2 text-red-900 hover:text-red-500 transition-colors">
-                      <Trash2 size={18} />
-                    </button>
-                  </div>
-                </div>
+                  )}
 
-                <div className="p-6 space-y-6 bg-black/20">
-                  {session.chapters?.length === 0 && <p className="text-center text-neutral-600 italic text-sm py-4">Sessão vazia</p>}
-                  {session.chapters?.map((chapter) => (
-                    <div key={chapter.id} className="bg-neutral-800/40 p-5 rounded-sm border border-neutral-700/50 group hover:border-gold/20 transition-all">
-                      <div className="flex gap-6 items-start">
-                        <div className="flex flex-col gap-2 pt-2">
-                          <button onClick={() => moveChapter(session.id, chapter.id, 'up')} className="p-1 hover:text-gold text-neutral-600 transition-colors"><ChevronUp size={20}/></button>
-                          <button onClick={() => moveChapter(session.id, chapter.id, 'down')} className="p-1 hover:text-gold text-neutral-600 transition-colors"><ChevronDown size={20}/></button>
+                  {sessions.map((session) => (
+                    <div key={session.id} className="bg-ink/60 border border-gold/10 rounded-sm overflow-hidden shadow-2xl">
+                      <div className="bg-ink p-4 border-b border-gold/10 flex justify-between items-center">
+                        <div className="flex gap-6 items-center flex-1">
+                          <div className="flex flex-col">
+                            <label className="text-[10px] text-gold/40 font-bold uppercase mb-1">Título da Sessão</label>
+                            <input 
+                              value={session.title} 
+                              onChange={(e) => {
+                                const newTitle = e.target.value;
+                                setSessions(sessions.map(s => s.id === session.id ? { ...s, title: newTitle } : s));
+                                setIsDirty({ ...isDirty, sessions: true });
+                              }}
+                              placeholder="Ex: O Despertar da Churrasqueira"
+                              className="bg-transparent border-b border-transparent focus:border-gold outline-none text-gold font-cinzel text-lg w-full"
+                            />
+                          </div>
+                          <div className="flex flex-col">
+                            <label className="text-[10px] text-gold/40 font-bold uppercase mb-1">Data/Identificador</label>
+                            <input 
+                              value={session.date_str} 
+                              onChange={(e) => {
+                                const newDate = e.target.value;
+                                setSessions(sessions.map(s => s.id === session.id ? { ...s, date_str: newDate } : s));
+                                setIsDirty({ ...isDirty, sessions: true });
+                              }}
+                              placeholder="Ex: Dia 1"
+                              className="bg-transparent border-b border-transparent focus:border-gold outline-none text-neutral-400 text-sm italic"
+                            />
+                          </div>
                         </div>
-                        <div className="flex-1 space-y-6">
-                              {/* 1. Título do Capítulo */}
-                              <div>
-                                <label className="text-[10px] text-gold/60 font-bold uppercase tracking-widest block mb-2">Título do Capítulo</label>
-                                <input 
-                                  value={chapter.title}
-                                  placeholder="Nome do Capítulo"
-                                  onChange={(e) => {
-                                    const newTitle = e.target.value;
-                                    setSessions(sessions.map(s => s.id === session.id ? { ...s, chapters: s.chapters?.map(c => c.id === chapter.id ? { ...c, title: newTitle } : c) } : s));
-                                    setIsDirty({ ...isDirty, sessions: true });
-                                  }}
-                                  className="w-full bg-transparent text-parchment font-cinzel text-xl border-b border-neutral-700 focus:border-gold outline-none pb-2 transition-all"
-                                />
-                              </div>
+                        <div className="flex gap-4">
+                          <button onClick={() => addChapter(session.id)} className="text-xs bg-gold/10 hover:bg-gold/20 text-gold px-4 py-2 rounded-sm border border-gold/20 transition-all font-bold">
+                            + CAPÍTULO
+                          </button>
+                          <button onClick={() => deleteSession(session.id)} className="p-2 text-red-900 hover:text-red-500 transition-colors">
+                            <Trash2 size={18} />
+                          </button>
+                        </div>
+                      </div>
 
-                              {/* 2. Ilustração (16:9) */}
-                              <div className="space-y-3">
-                                <label className="text-[10px] text-gold/60 font-bold uppercase tracking-widest block">Ilustração do Capítulo</label>
-                                
-                                <div className="aspect-video w-full bg-neutral-900 rounded border border-neutral-700 flex items-center justify-center overflow-hidden relative group/img shadow-2xl">
-                                   {chapter.image_url ? (
-                                     <img 
-                                      src={`${getStorageUrl(chapter.image_url)}?t=${Date.now()}`} 
-                                      key={chapter.image_url}
-                                      className="w-full h-full object-cover opacity-80 group-hover/img:opacity-100 transition-opacity" 
-                                     />
-                                   ) : (
-                                     <div className="flex flex-col items-center gap-2 opacity-20">
-                                       <ImageIcon size={48} />
-                                       <span className="text-[10px] uppercase font-bold tracking-tighter">Sem Imagem</span>
-                                     </div>
-                                   )}
-                                   <label className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center opacity-0 group-hover/img:opacity-100 transition-opacity cursor-pointer backdrop-blur-[2px]">
+                      <div className="p-6 space-y-6 bg-black/20">
+                        {session.chapters?.length === 0 && <p className="text-center text-neutral-600 italic text-sm py-4">Sessão vazia</p>}
+                        {session.chapters?.map((chapter) => (
+                          <div key={chapter.id} className="bg-neutral-800/40 p-5 rounded-sm border border-neutral-700/50 group hover:border-gold/20 transition-all">
+                            <div className="flex gap-6 items-start">
+                              <div className="flex flex-col gap-2 pt-2">
+                                <button onClick={() => moveChapter(session.id, chapter.id, 'up')} className="p-1 hover:text-gold text-neutral-600 transition-colors"><ChevronUp size={20}/></button>
+                                <button onClick={() => moveChapter(session.id, chapter.id, 'down')} className="p-1 hover:text-gold text-neutral-600 transition-colors"><ChevronDown size={20}/></button>
+                              </div>
+                              <div className="flex-1 space-y-6">
+                                <div>
+                                  <label className="text-[10px] text-gold/60 font-bold uppercase tracking-widest block mb-2">Título do Capítulo</label>
+                                  <input 
+                                    value={chapter.title}
+                                    placeholder="Nome do Capítulo"
+                                    onChange={(e) => {
+                                      const newTitle = e.target.value;
+                                      setSessions(sessions.map(s => s.id === session.id ? { ...s, chapters: s.chapters?.map(c => c.id === chapter.id ? { ...c, title: newTitle } : c) } : s));
+                                      setIsDirty({ ...isDirty, sessions: true });
+                                    }}
+                                    className="w-full bg-transparent text-parchment font-cinzel text-xl border-b border-neutral-700 focus:border-gold outline-none pb-2 transition-all"
+                                  />
+                                </div>
+
+                                <div className="space-y-3">
+                                  <label className="text-[10px] text-gold/60 font-bold uppercase tracking-widest block">Ilustração do Capítulo</label>
+                                  <div className="aspect-video w-full bg-neutral-900 rounded border border-neutral-700 flex items-center justify-center overflow-hidden relative group/img shadow-2xl">
+                                    {chapter.image_url ? (
+                                      <img 
+                                        src={`${getStorageUrl(chapter.image_url)}?t=${Date.now()}`} 
+                                        key={chapter.image_url}
+                                        className="w-full h-full object-cover opacity-80 group-hover/img:opacity-100 transition-opacity" 
+                                      />
+                                    ) : (
+                                      <div className="flex flex-col items-center gap-2 opacity-20">
+                                        <ImageIcon size={48} />
+                                        <span className="text-[10px] uppercase font-bold tracking-tighter">Sem Imagem</span>
+                                      </div>
+                                    )}
+                                    <label className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center opacity-0 group-hover/img:opacity-100 transition-opacity cursor-pointer backdrop-blur-[2px]">
                                       <input 
                                         type="file" 
                                         accept="image/*"
@@ -494,23 +494,22 @@ Regras:
                                       <Upload className="text-gold mb-2" size={32} />
                                       <span className="text-xs font-bold text-white uppercase tracking-widest">Fazer Upload Ilustração</span>
                                       <p className="text-[10px] text-gold/60 mt-1">AR 16:9 (1920x1080px)</p>
-                                   </label>
+                                    </label>
+                                  </div>
                                 </div>
-                              </div>
 
-                              {/* 3. Narrativa (Texto) */}
-                              <div className="space-y-2">
-                                 <div className="flex justify-between items-center mb-2">
-                                   <label className="text-[10px] text-gold/60 font-bold uppercase tracking-widest block">Narrativa do Capítulo</label>
-                                   <button 
-                                    onClick={() => handleGeneratePrompt(chapter)}
-                                    title="Gerar Prompt sugerido para IA"
-                                    className="flex items-center gap-1 text-[9px] uppercase font-bold text-gold/40 hover:text-gold transition-colors bg-gold/5 px-2 py-1 rounded-sm border border-gold/10"
-                                   >
-                                    <Wand2 size={12} /> Prompt IA Mágico
-                                   </button>
-                                 </div>
-                                 <textarea 
+                                <div className="space-y-2">
+                                  <div className="flex justify-between items-center mb-2">
+                                    <label className="text-[10px] text-gold/60 font-bold uppercase tracking-widest block">Narrativa do Capítulo</label>
+                                    <button 
+                                      onClick={() => handleGeneratePrompt(chapter)}
+                                      title="Gerar Prompt sugerido para IA"
+                                      className="flex items-center gap-1 text-[9px] uppercase font-bold text-gold/40 hover:text-gold transition-colors bg-gold/5 px-2 py-1 rounded-sm border border-gold/10"
+                                    >
+                                      <Wand2 size={12} /> Prompt IA Mágico
+                                    </button>
+                                  </div>
+                                  <textarea 
                                     value={chapter.content}
                                     placeholder="Conte a história aqui..."
                                     rows={10}
@@ -520,123 +519,119 @@ Regras:
                                       setIsDirty({ ...isDirty, sessions: true });
                                     }}
                                     className="w-full bg-ink/30 border border-neutral-700/50 p-6 rounded text-parchment/90 text-base focus:border-gold outline-none leading-relaxed resize-none font-merriweather shadow-inner min-h-[300px]"
-                                 />
+                                  />
+                                </div>
                               </div>
-                        </div>
-                        <button 
-                          onClick={() => deleteChapter(session.id, chapter.id)}
-                          className="p-2 text-red-900/50 hover:text-red-500 transition-colors"
-                        >
-                          <Trash2 size={20}/>
-                        </button>
+                              <button 
+                                onClick={() => deleteChapter(session.id, chapter.id)}
+                                className="p-2 text-red-900/50 hover:text-red-500 transition-colors"
+                              >
+                                <Trash2 size={20}/>
+                              </button>
+                            </div>
+                          </div>
+                        ))}
                       </div>
                     </div>
                   ))}
                 </div>
               </div>
-            ))}
-          </div>
-        )}
+            )}
 
-        {activeTab === 'players' && (
-           <div className="space-y-10">
-              <div className="flex justify-between items-center bg-neutral-800/30 p-6 rounded-sm border border-neutral-700/50">
-                <div>
-                  <h2 className="text-xl font-cinzel text-gold uppercase tracking-tighter">O Grupo de Aventureiros</h2>
-                  <p className="text-sm text-neutral-500 italic">Gerencie os personagens que fazem parte desta jornada</p>
+            {activeTab === 'players' && (
+              <div className="space-y-10 pb-20">
+                <div className="sticky top-0 z-20 bg-neutral-900/95 backdrop-blur-md p-6 border-b border-gold/10 flex justify-between items-center shadow-xl">
+                  <div>
+                    <h2 className="text-xl font-cinzel text-gold uppercase tracking-tighter">O Grupo de Aventureiros</h2>
+                    <p className="text-sm text-neutral-500 italic">Gerencie os personagens que fazem parte desta jornada</p>
+                  </div>
+                  <div className="flex gap-4">
+                    <button onClick={addPlayer} className="bg-neutral-800 hover:bg-neutral-700 px-4 py-2 rounded-sm flex items-center gap-2 border border-gold/30 text-gold font-bold text-sm transition-colors">
+                      <Plus size={16}/> Novo Jogador
+                    </button>
+                    <button 
+                      onClick={savePlayers} 
+                      disabled={saving || !isDirty.players}
+                      className="bg-gold text-ink px-6 py-2 rounded-sm flex items-center gap-2 font-bold hover:bg-yellow-500 transition-all shadow-lg disabled:opacity-30"
+                    >
+                      {saving ? <Loader2 size={18} className="animate-spin" /> : <Save size={18}/>}
+                      {saving ? 'Salvando...' : 'Salvar Grupo'}
+                    </button>
+                  </div>
                 </div>
-                <div className="flex gap-4">
-                  <button onClick={addPlayer} className="bg-neutral-800 hover:bg-neutral-700 px-4 py-2 rounded-sm flex items-center gap-2 border border-gold/30 text-gold font-bold text-sm transition-colors">
-                    <Plus size={16}/> Novo Jogador
-                  </button>
-                  <button 
-                    onClick={savePlayers} 
-                    disabled={saving || !isDirty.players}
-                    className="bg-gold text-ink px-6 py-2 rounded-sm flex items-center gap-2 font-bold hover:bg-yellow-500 transition-all shadow-lg disabled:opacity-30"
-                  >
-                    {saving ? <Loader2 size={18} className="animate-spin" /> : <Save size={18}/>}
-                    {saving ? 'Salvar Grupo' : 'Salvar Grupo'}
-                  </button>
-                </div>
-              </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                {players.map((p) => {
-                  // Determina o rótulo do campo de avanço baseado no sistema
-                  const systemLabel = (chronicle as any).systems?.advancement_label || 'Nível';
-                  
-                  return (
-                    <div key={p.id} className="bg-ink p-8 border border-gold/10 rounded-sm group hover:border-gold/30 transition-all shadow-xl relative">
-                      {/* Delete Button */}
-                      <button 
-                        onClick={() => deletePlayer(p.id)}
-                        className="absolute top-4 right-4 p-2 text-neutral-800 hover:text-red-600 transition-colors opacity-0 group-hover:opacity-100"
-                      >
-                        <Trash2 size={18} />
-                      </button>
+                <div className="p-10 grid grid-cols-1 md:grid-cols-2 gap-8">
+                  {players.map((p) => {
+                    const systemLabel = (chronicle as any).systems?.advancement_label || 'Nível';
+                    return (
+                      <div key={p.id} className="bg-ink p-8 border border-gold/10 rounded-sm group hover:border-gold/30 transition-all shadow-xl relative">
+                        <button 
+                          onClick={() => deletePlayer(p.id)}
+                          className="absolute top-4 right-4 p-2 text-neutral-800 hover:text-red-600 transition-colors opacity-0 group-hover:opacity-100"
+                        >
+                          <Trash2 size={18} />
+                        </button>
 
-                      <div className="flex flex-col gap-8">
-                        {/* Header: Photo + Names */}
-                        <div className="flex items-center gap-6">
-                          <div className="relative group/avatar">
-                            <div className="w-24 h-24 rounded-full border-2 border-gold/20 overflow-hidden bg-neutral-800 shadow-inner">
-                              {p.face_url ? (
-                                <img 
-                                  src={`${getStorageUrl(p.face_url)}?t=${Date.now()}`} 
-                                  key={p.face_url}
-                                  className="w-full h-full object-cover" 
+                        <div className="flex flex-col gap-8">
+                          <div className="flex items-center gap-6">
+                            <div className="relative group/avatar">
+                              <div className="w-24 h-24 rounded-full border-2 border-gold/20 overflow-hidden bg-neutral-800 shadow-inner">
+                                {p.face_url ? (
+                                  <img 
+                                    src={`${getStorageUrl(p.face_url)}?t=${Date.now()}`} 
+                                    key={p.face_url}
+                                    className="w-full h-full object-cover" 
+                                  />
+                                ) : (
+                                  <div className="w-full h-full flex items-center justify-center"><Users className="text-neutral-700" size={32} /></div>
+                                )}
+                              </div>
+                              <label className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover/avatar:opacity-100 cursor-pointer transition-opacity rounded-full">
+                                <input type="file" className="hidden" accept="image/*" onChange={async (e) => {
+                                  const file = e.target.files?.[0];
+                                  if (!file) return;
+                                  const fileName = `pic_plr_${slugify(p.char_name || 'unknown')}_face.jpg`;
+                                  const path = await handleFileUpload(file, fileName, p.face_url);
+                                  updatePlayer(p.id, { face_url: path });
+                                  setIsDirty({ ...isDirty, players: true });
+                                }}/>
+                                <Upload size={20} className="text-gold" />
+                              </label>
+                            </div>
+
+                            <div className="flex-1 space-y-4">
+                              <div>
+                                <label className="text-[10px] uppercase text-neutral-600 font-bold block mb-1 tracking-widest">Nome do Personagem</label>
+                                <input 
+                                  value={p.char_name} 
+                                  onChange={(e) => {
+                                    updatePlayer(p.id, { char_name: e.target.value });
+                                    setIsDirty({ ...isDirty, players: true });
+                                  }}
+                                  placeholder="Nome do Herói" 
+                                  className="block w-full bg-transparent font-cinzel text-2xl text-gold outline-none border-b border-neutral-800 focus:border-gold pb-1 transition-all" 
                                 />
-                              ) : (
-                                <div className="w-full h-full flex items-center justify-center"><Users className="text-neutral-700" size={32} /></div>
-                              )}
-                            </div>
-                            <label className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover/avatar:opacity-100 cursor-pointer transition-opacity rounded-full">
-                              <input type="file" className="hidden" accept="image/*" onChange={async (e) => {
-                                const file = e.target.files?.[0];
-                                if (!file) return;
-                                const fileName = `pic_plr_${slugify(p.char_name || 'unknown')}_face.jpg`;
-                                const path = await handleFileUpload(file, fileName, p.face_url);
-                                updatePlayer(p.id, { face_url: path });
-                              }}/>
-                              <Upload size={20} className="text-gold" />
-                            </label>
-                          </div>
-
-                          <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                              <label className="text-[10px] uppercase text-neutral-600 font-bold block mb-1 tracking-widest">Nome do Personagem</label>
-                              <input 
-                                value={p.char_name} 
-                                onChange={(e) => {
-                                  updatePlayer(p.id, { char_name: e.target.value });
-                                  setIsDirty({ ...isDirty, players: true });
-                                }}
-                                placeholder="Nome do Herói" 
-                                className="block w-full bg-transparent font-cinzel text-2xl text-gold outline-none border-b border-neutral-800 focus:border-gold pb-1 transition-all" 
-                              />
-                            </div>
-                            <div>
-                              <label className="text-[10px] uppercase text-neutral-600 font-bold block mb-1 tracking-widest">Jogador Real</label>
-                              <input 
-                                value={p.real_name} 
-                                onChange={(e) => {
-                                  updatePlayer(p.id, { real_name: e.target.value });
-                                  setIsDirty({ ...isDirty, players: true });
-                                }}
-                                placeholder="Responsável" 
-                                className="block w-full bg-transparent text-lg text-neutral-300 outline-none italic border-b border-neutral-800 focus:border-gold/30 pb-1 transition-all" 
-                              />
+                              </div>
+                              <div>
+                                <label className="text-[10px] uppercase text-neutral-600 font-bold block mb-1 tracking-widest">Jogador Real</label>
+                                <input 
+                                  value={p.real_name} 
+                                  onChange={(e) => {
+                                    updatePlayer(p.id, { real_name: e.target.value });
+                                    setIsDirty({ ...isDirty, players: true });
+                                  }}
+                                  placeholder="Responsável" 
+                                  className="block w-full bg-transparent text-lg text-neutral-300 outline-none italic border-b border-neutral-800 focus:border-gold/30 pb-1 transition-all" 
+                                />
+                              </div>
                             </div>
                           </div>
-                        </div>
 
-                        {/* Middle section: Body image + Details */}
-                        <div className="flex flex-col md:flex-row gap-8">
-                          {/* Body Image (Portrait) */}
-                          <div className="space-y-2">
-                             <label className="text-[10px] uppercase text-gold/40 font-bold block tracking-widest">Corpo Inteiro</label>
-                             <div className="w-full md:w-32 aspect-[2/3] bg-neutral-900 border border-neutral-800 rounded-sm relative group/body overflow-hidden shadow-lg">
-                               {p.body_url ? (
+                          <div className="flex flex-col md:flex-row gap-8">
+                            <div className="space-y-2">
+                              <label className="text-[10px] uppercase text-gold/40 font-bold block tracking-widest">Corpo Inteiro</label>
+                              <div className="w-full md:w-32 aspect-[2/3] bg-neutral-900 border border-neutral-800 rounded-sm relative group/body overflow-hidden shadow-lg">
+                                {p.body_url ? (
                                   <img 
                                     src={`${getStorageUrl(p.body_url)}?t=${Date.now()}`} 
                                     key={p.body_url} 
@@ -646,239 +641,241 @@ Regras:
                                   <div className="w-full h-full flex items-center justify-center opacity-20"><UserCheck size={32}/></div>
                                 )}
                                 <label className="absolute inset-0 bg-black/80 flex items-center justify-center opacity-0 group-hover/body:opacity-100 cursor-pointer transition-opacity">
-                                   <input type="file" className="hidden" accept="image/*" onChange={async (e) => {
-                                     const file = e.target.files?.[0];
-                                     if (!file) return;
-                                     const fileName = `pic_plr_${slugify(p.char_name || 'unknown')}_body.jpg`;
-                                     const path = await handleFileUpload(file, fileName, p.body_url);
-                                     updatePlayer(p.id, { body_url: path });
-                                     setIsDirty({ ...isDirty, players: true });
-                                   }}/>
-                                   <Upload size={24} className="text-gold" />
+                                  <input type="file" className="hidden" accept="image/*" onChange={async (e) => {
+                                    const file = e.target.files?.[0];
+                                    if (!file) return;
+                                    const fileName = `pic_plr_${slugify(p.char_name || 'unknown')}_body.jpg`;
+                                    const path = await handleFileUpload(file, fileName, p.body_url);
+                                    updatePlayer(p.id, { body_url: path });
+                                    setIsDirty({ ...isDirty, players: true });
+                                  }}/>
+                                  <Upload size={24} className="text-gold" />
                                 </label>
-                             </div>
-                             <p className="text-[8px] text-neutral-600 font-medium">Portrait: 800x1200px</p>
+                              </div>
+                              <p className="text-[8px] text-neutral-600 font-medium text-center">Portrait: 2:3</p>
+                            </div>
+
+                            <div className="flex-1 flex flex-col gap-4">
+                              <div className="w-full">
+                                <label className="text-[10px] uppercase text-neutral-600 font-bold block mb-1 tracking-widest">Raça</label>
+                                <input 
+                                  value={p.race || ''} 
+                                  onChange={(e) => {
+                                    updatePlayer(p.id, { race: e.target.value });
+                                    setIsDirty({ ...isDirty, players: true });
+                                  }}
+                                  placeholder="Ex: Humano..." 
+                                  className="w-full bg-neutral-800/30 border-b border-neutral-700/50 focus:border-gold outline-none px-2 py-1 text-neutral-200 text-sm"
+                                />
+                              </div>
+                              <div className="w-full">
+                                <label className="text-[10px] uppercase text-neutral-600 font-bold block mb-1 tracking-widest">Classe</label>
+                                <input 
+                                  value={p.class || ''} 
+                                  onChange={(e) => {
+                                    updatePlayer(p.id, { class: e.target.value });
+                                    setIsDirty({ ...isDirty, players: true });
+                                  }}
+                                  placeholder="Ex: Guerreiro..." 
+                                  className="w-full bg-neutral-800/30 border-b border-neutral-700/50 focus:border-gold outline-none px-2 py-1 text-neutral-200 text-sm"
+                                />
+                              </div>
+                              <div className="w-full">
+                                <label className="text-[10px] uppercase text-neutral-600 font-bold block mb-1 tracking-widest">{systemLabel}</label>
+                                <input 
+                                  value={p.level_points || ''} 
+                                  onChange={(e) => {
+                                    updatePlayer(p.id, { level_points: e.target.value });
+                                    setIsDirty({ ...isDirty, players: true });
+                                  }}
+                                  placeholder={systemLabel === 'Pontos' ? '150' : '5'} 
+                                  className="w-full bg-neutral-800/30 border-b border-neutral-700/50 focus:border-gold outline-none px-2 py-1 text-neutral-200 text-sm"
+                                />
+                              </div>
+                              <div className="mt-2">
+                                <label className="flex items-center gap-2 text-[10px] font-bold text-gold cursor-pointer hover:text-yellow-400">
+                                  <input 
+                                    type="checkbox" 
+                                    checked={p.is_active} 
+                                    onChange={(e) => {
+                                      updatePlayer(p.id, { is_active: e.target.checked });
+                                      setIsDirty({ ...isDirty, players: true });
+                                    }}
+                                    className="accent-gold w-4 h-4" 
+                                  /> PERSONAGEM ATIVO
+                                </label>
+                              </div>
+                            </div>
                           </div>
 
-                          {/* Character Details */}
-                          <div className="flex-1 flex flex-col gap-4 items-start max-w-xs">
-                            <div className="w-full">
-                              <label className="text-[10px] uppercase text-neutral-600 font-bold block mb-1 tracking-widest">Raça</label>
-                              <input 
-                                value={p.race || ''} 
-                                onChange={(e) => {
-                                  updatePlayer(p.id, { race: e.target.value });
-                                  setIsDirty({ ...isDirty, players: true });
-                                }}
-                                placeholder="Ex: Humano, Elfo..." 
-                                className="w-full bg-neutral-800/30 border-b border-neutral-700/50 focus:border-gold outline-none px-2 py-1 text-neutral-200 text-sm"
-                              />
-                            </div>
-                            <div className="w-full">
-                              <label className="text-[10px] uppercase text-neutral-600 font-bold block mb-1 tracking-widest">Classe</label>
-                              <input 
-                                value={p.class || ''} 
-                                onChange={(e) => {
-                                  updatePlayer(p.id, { class: e.target.value });
-                                  setIsDirty({ ...isDirty, players: true });
-                                }}
-                                placeholder="Ex: Guerreiro, Mago..." 
-                                className="w-full bg-neutral-800/30 border-b border-neutral-700/50 focus:border-gold outline-none px-2 py-1 text-neutral-200 text-sm"
-                              />
-                            </div>
-                            <div className="w-full">
-                              <label className="text-[10px] uppercase text-neutral-600 font-bold block mb-1 tracking-widest">{systemLabel}</label>
-                              <input 
-                                value={p.level_points || ''} 
-                                onChange={(e) => {
-                                  updatePlayer(p.id, { level_points: e.target.value });
-                                  setIsDirty({ ...isDirty, players: true });
-                                }}
-                                placeholder={systemLabel === 'Pontos' ? '150' : '5'} 
-                                className="w-full bg-neutral-800/30 border-b border-neutral-700/50 focus:border-gold outline-none px-2 py-1 text-neutral-200 text-sm"
-                              />
-                            </div>
-                            <div className="mt-2">
-                              <label className="flex items-center gap-2 text-[10px] font-bold text-gold cursor-pointer hover:text-yellow-400">
-                                <input 
-                                 type="checkbox" 
-                                 checked={p.is_active} 
-                                 onChange={(e) => {
-                                  updatePlayer(p.id, { is_active: e.target.checked });
-                                  setIsDirty({ ...isDirty, players: true });
-                                 }}
-                                 className="accent-gold w-4 h-4" 
-                                /> PERSONAGEM ATIVO
-                              </label>
-                            </div>
+                          <div className="space-y-2">
+                            <label className="text-[10px] uppercase text-neutral-600 font-bold block mb-1 tracking-widest">Descrição</label>
+                            <textarea 
+                              value={p.description || ''} 
+                              onChange={(e) => {
+                                updatePlayer(p.id, { description: e.target.value });
+                                setIsDirty({ ...isDirty, players: true });
+                              }}
+                              placeholder="Breve história..." 
+                              className="w-full bg-black/30 text-sm text-neutral-400 outline-none border border-neutral-800 p-4 rounded focus:border-gold/20 resize-none font-serif leading-relaxed" 
+                              rows={3} 
+                            />
                           </div>
                         </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
-                        {/* Footer: Description */}
+            {activeTab === 'aventura' && (
+              <div className="space-y-8 pb-20">
+                <div className="sticky top-0 z-20 bg-neutral-900/95 backdrop-blur-md p-6 border-b border-gold/10 flex justify-between items-center shadow-xl">
+                  <div>
+                    <h2 className="text-xl font-cinzel text-gold uppercase tracking-tighter">Metadados da Crônica</h2>
+                    <p className="text-sm text-neutral-500 italic">Configurações globais e link de acesso</p>
+                  </div>
+                  <button 
+                    onClick={saveAventura} 
+                    disabled={saving || !isDirty.aventura}
+                    className="bg-gold text-ink px-6 py-2 rounded-sm flex items-center gap-2 font-bold hover:bg-yellow-500 transition-all shadow-lg disabled:opacity-30"
+                  >
+                    {saving ? <Loader2 size={18} className="animate-spin" /> : <Save size={18}/>}
+                    {saving ? 'Salvando...' : 'Salvar Aventura'}
+                  </button>
+                </div>
+
+                <div className="p-10 flex flex-col items-center">
+                  <div className="max-w-2xl w-full bg-ink p-10 border border-gold/10 rounded-sm space-y-10 shadow-2xl">
+                    <div>
+                      <h3 className="font-cinzel text-gold text-xl mb-6 flex items-center gap-3">
+                        <MessageSquare size={20} /> Identidade da Campanha
+                      </h3>
+                      <div className="space-y-6">
                         <div className="space-y-2">
-                          <label className="text-[10px] uppercase text-neutral-600 font-bold block mb-1 tracking-widest">Breve História / Descrição</label>
-                          <textarea 
-                            value={p.description || ''} 
+                          <label className="text-xs uppercase tracking-widest text-gold/60 font-bold">Título Principal</label>
+                          <input 
+                            value={chronicle.title} 
                             onChange={(e) => {
-                              updatePlayer(p.id, { description: e.target.value });
-                              setIsDirty({ ...isDirty, players: true });
+                              setChronicle({...chronicle, title: e.target.value});
+                              setIsDirty({ ...isDirty, aventura: true });
                             }}
-                            placeholder="Descreva o herói e suas motivações..." 
-                            className="w-full bg-black/30 text-sm text-neutral-400 outline-none border border-neutral-800 p-4 rounded focus:border-gold/20 resize-none font-serif leading-relaxed" 
-                            rows={3} 
+                            className="w-full bg-neutral-800/50 border border-neutral-700 p-4 rounded-sm outline-none focus:ring-1 focus:ring-gold text-lg font-cinzel text-gold"
                           />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-xs uppercase tracking-widest text-gold/60 font-bold">Mestre da Mesa</label>
+                          <input 
+                            value={chronicle.master_name}
+                            onChange={(e) => {
+                              setChronicle({...chronicle, master_name: e.target.value});
+                              setIsDirty({ ...isDirty, aventura: true });
+                            }}
+                            className="w-full bg-neutral-800/50 border border-neutral-700 p-4 rounded-sm outline-none focus:ring-1 focus:ring-gold"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-xs uppercase tracking-widest text-gold/60 font-bold">Sistema de RPG</label>
+                          <select 
+                            value={chronicle.system_id || ''}
+                            onChange={(e) => {
+                              setChronicle({...chronicle, system_id: e.target.value});
+                              setIsDirty({ ...isDirty, aventura: true });
+                            }}
+                            className="w-full bg-neutral-800/50 border border-neutral-700 p-4 rounded-sm outline-none focus:ring-1 focus:ring-gold text-white appearance-none cursor-pointer"
+                          >
+                            <option value="">Selecione um sistema</option>
+                            {systems.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                          </select>
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-xs uppercase tracking-widest text-gold/60 font-bold">URL Pública (Slug)</label>
+                          <div className="flex items-center gap-4 bg-neutral-800/50 border border-neutral-700 p-4 rounded-sm">
+                            <span className="text-neutral-500 text-sm font-mono tracking-tighter">andreric.com/rpg/</span>
+                            <input 
+                              value={chronicle.slug}
+                              onChange={(e) => {
+                                setChronicle({...chronicle, slug: e.target.value});
+                                setIsDirty({ ...isDirty, aventura: true });
+                              }}
+                              className="flex-1 bg-transparent outline-none text-gold font-bold"
+                            />
+                            <button 
+                              onClick={() => navigate(`/adventure/${chronicle.slug}`)}
+                              className="p-2 hover:bg-gold/10 rounded-full transition-colors text-gold"
+                            >
+                              <ImageIcon size={18} />
+                            </button>
+                          </div>
                         </div>
                       </div>
                     </div>
-                  );
-                })}
-              </div>
-           </div>
-        )}
-
-        {activeTab === 'aventura' && (
-          <div className="space-y-8">
-            <div className="flex justify-between items-center bg-neutral-800/30 p-6 rounded-sm border border-neutral-700/50">
-              <div>
-                <h2 className="text-xl font-cinzel text-gold uppercase tracking-tighter">Metadados da Crônica</h2>
-                <p className="text-sm text-neutral-500 italic">Configurações globais e link de acesso</p>
-              </div>
-              <button 
-                onClick={saveAventura} 
-                disabled={saving || !isDirty.aventura}
-                className="bg-gold text-ink px-6 py-2 rounded-sm flex items-center gap-2 font-bold hover:bg-yellow-500 transition-all shadow-lg disabled:opacity-30"
-              >
-                {saving ? <Loader2 size={18} className="animate-spin" /> : <Save size={18}/>}
-                {saving ? 'Salvando...' : 'Salvar Aventura'}
-              </button>
-            </div>
-
-            <div className="max-w-2xl bg-ink p-10 border border-gold/10 rounded-sm space-y-10 shadow-2xl">
-              <div>
-                <h3 className="font-cinzel text-gold text-xl mb-6 flex items-center gap-3">
-                  <MessageSquare size={20} /> Identidade da Campanha
-                </h3>
-                <div className="space-y-6">
-                   <div className="space-y-2">
-                     <label className="text-xs uppercase tracking-widest text-gold/60 font-bold">Título Principal</label>
-                     <input 
-                       value={chronicle.title} 
-                       onChange={(e) => {
-                         setChronicle({...chronicle, title: e.target.value});
-                         setIsDirty({ ...isDirty, aventura: true });
-                       }}
-                       className="w-full bg-neutral-800/50 border border-neutral-700 p-4 rounded-sm outline-none focus:ring-1 focus:ring-gold text-lg font-cinzel text-gold"
-                     />
-                   </div>
-                   <div className="space-y-2">
-                     <label className="text-xs uppercase tracking-widest text-gold/60 font-bold">Mestre da Mesa</label>
-                     <input 
-                       value={chronicle.master_name}
-                       onChange={(e) => {
-                         setChronicle({...chronicle, master_name: e.target.value});
-                         setIsDirty({ ...isDirty, aventura: true });
-                       }}
-                       className="w-full bg-neutral-800/50 border border-neutral-700 p-4 rounded-sm outline-none focus:ring-1 focus:ring-gold"
-                     />
-                   </div>
-                   <div className="space-y-2">
-                     <label className="text-xs uppercase tracking-widest text-gold/60 font-bold">Sistema de RPG</label>
-                     <select 
-                       value={chronicle.system_id || ''}
-                       onChange={(e) => {
-                         setChronicle({...chronicle, system_id: e.target.value});
-                         setIsDirty({ ...isDirty, aventura: true });
-                       }}
-                       className="w-full bg-neutral-800/50 border border-neutral-700 p-4 rounded-sm outline-none focus:ring-1 focus:ring-gold text-white appearance-none cursor-pointer"
-                     >
-                       <option value="">Selecione um sistema</option>
-                       {systems.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-                     </select>
-                   </div>
-                   <div className="space-y-2">
-                     <label className="text-xs uppercase tracking-widest text-gold/60 font-bold">URL Pública (Slug)</label>
-                     <div className="flex items-center gap-4 bg-neutral-800/50 border border-neutral-700 p-4 rounded-sm">
-                       <span className="text-neutral-500 text-sm font-mono tracking-tighter">andreric.com/rpg/</span>
-                       <input 
-                          value={chronicle.slug}
-                          onChange={(e) => {
-                            setChronicle({...chronicle, slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-')});
-                            setIsDirty({ ...isDirty, aventura: true });
-                          }}
-                          className="bg-transparent border-none outline-none flex-1 font-bold text-gold placeholder:text-neutral-700"
-                          placeholder="meu-rpg-fantastico"
-                       />
-                     </div>
-                     <p className="text-[10px] text-neutral-600 italic">O slug define o link final da sua aventura.</p>
-                   </div>
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
           </div>
-        )}
+        </main>
       </div>
-    </main>
-  </div>
 
-      {/* AI Prompt Modal */}
+      {/* Modal Prompt IA */}
       <AnimatePresence>
         {showPromptModal && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
             <motion.div 
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              className="bg-neutral-900 border border-gold/30 rounded-sm shadow-2xl w-full max-w-2xl overflow-hidden"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowPromptModal(false)}
+              className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+            />
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              className="relative w-full max-w-lg bg-ink border border-gold/30 p-8 rounded shadow-2xl"
             >
-              <div className="p-6 border-b border-gold/10 flex justify-between items-center">
-                <div className="flex items-center gap-3">
-                  <Wand2 className="text-gold" size={20} />
-                  <h3 className="font-cinzel text-lg text-gold uppercase tracking-tighter">Prompt Perfeito para IA</h3>
-                </div>
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="font-cinzel text-gold text-lg flex items-center gap-2">
+                  <Wand2 size={20} /> Prompt IA Mágico
+                </h3>
                 <button onClick={() => setShowPromptModal(false)} className="text-neutral-500 hover:text-white transition-colors">
                   <X size={24} />
                 </button>
               </div>
-              <div className="p-8 space-y-6">
-                <p className="text-sm text-neutral-400 italic">
-                  O Gemini AI está analisando sua história para extrair a essência visual perfeita. 
-                  <br />
-                  <span className="text-gold/60">💡 Dica Leonardo.ai: Use o seletor lateral em 16:9.</span>
-                </p>
 
-                {isGeneratingPrompt ? (
-                  <div className="flex flex-col items-center justify-center py-12 gap-4">
-                    <Loader2 className="text-gold animate-spin" size={48} />
-                    <p className="text-gold animate-pulse font-cinzel">Invocando Inteligência Arcano...</p>
-                  </div>
-                ) : errorAI ? (
-                  <div className="p-4 bg-red-900/20 border border-red-500/50 rounded text-red-200 text-sm">
-                    {errorAI}
-                  </div>
-                ) : (
-                  <>
-                    <div className="relative group">
-                      <textarea 
-                        readOnly
-                        value={generatedPrompt}
-                        className="w-full h-40 bg-black/40 border border-gold/20 p-6 rounded text-parchment/70 text-sm italic font-serif leading-relaxed outline-none resize-none"
-                      />
-                    </div>
+              {isGeneratingPrompt ? (
+                <div className="flex flex-col items-center py-12 gap-4">
+                  <Loader2 className="animate-spin text-gold" size={48} />
+                  <p className="text-gold/60 font-cinzel animate-pulse">Consultando os Oráculos...</p>
+                </div>
+              ) : errorAI ? (
+                <div className="bg-red-900/20 border border-red-900/50 p-6 rounded text-red-200 text-sm mb-6 flex items-start gap-4">
+                  <XCircle className="shrink-0" />
+                  <p>{errorAI}</p>
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  <div className="bg-black/40 border border-gold/10 p-6 rounded text-parchment italic font-serif leading-relaxed text-lg min-h-[150px] relative group">
+                    {generatedPrompt}
                     <button 
                       onClick={copyToClipboard}
-                      className={`w-full py-4 rounded-sm font-bold flex items-center justify-center gap-2 transition-all ${
-                        copySuccess ? 'bg-green-600 text-white' : 'bg-gold text-ink hover:bg-yellow-500 shadow-lg'
-                      }`}
+                      className="absolute bottom-4 right-4 bg-gold/10 hover:bg-gold text-gold hover:text-ink p-2 rounded transition-all"
                     >
-                      {copySuccess ? (
-                        <><Check size={20} /> COPIADO!</>
-                      ) : (
-                        <><Copy size={20} /> COPIAR PROMPT</>
-                      )}
+                      {copySuccess ? <Check size={20} /> : <Copy size={20} />}
                     </button>
-                  </>
-                )}
-              </div>
+                  </div>
+                  <div className="flex justify-center">
+                    <button 
+                      onClick={() => setShowPromptModal(false)}
+                      className="bg-gold text-ink px-8 py-2 font-bold hover:bg-yellow-500 transition-colors rounded-sm"
+                    >
+                      CONCLUÍDO
+                    </button>
+                  </div>
+                </div>
+              )}
             </motion.div>
           </div>
         )}
