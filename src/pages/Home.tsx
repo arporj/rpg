@@ -39,7 +39,7 @@ export default function Home() {
     <div className="min-h-screen bg-ink text-parchment font-serif selection:bg-gold/30">
       {/* Hero Section */}
       <section className="relative h-[60vh] flex items-center justify-center overflow-hidden border-b border-gold/10">
-        <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1549643276-fdf2fab574f5?q=80&w=2670&auto=format&fit=crop')] bg-cover bg-center brightness-[0.2]" />
+        <div className="absolute inset-0 bg-[url('/hero-bg.jpg')] bg-cover bg-center brightness-[0.2]" />
         <div className="absolute inset-0 bg-gradient-to-t from-ink via-transparent to-transparent" />
         
         <div className="relative z-10 text-center space-y-6 px-4">
