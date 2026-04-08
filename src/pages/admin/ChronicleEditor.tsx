@@ -324,7 +324,7 @@ Regras:
   if (loading || !chronicle) return <div className="flex justify-center p-20"><Loader2 className="animate-spin text-gold" size={48} /></div>;
 
   return (
-    <div className="h-screen bg-neutral-900 text-white font-sans flex flex-col overflow-hidden">
+    <div className="h-screen h-[100dvh] bg-neutral-900 text-white font-sans flex flex-col overflow-hidden">
       <header className="bg-ink border-b border-gold/20 p-4 sticky top-0 z-50 flex items-center justify-between shadow-xl">
         <div className="flex items-center gap-4">
           <button onClick={() => navigate('/admin/dashboard')} className="hover:text-gold transition-colors p-2"><ArrowLeft /></button>
@@ -339,7 +339,7 @@ Regras:
         </div>
       </header>
 
-      <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
+      <div className="flex-1 flex flex-col md:flex-row overflow-hidden min-h-0">
         {/* Sidebar */}
         <aside className="w-full md:w-64 bg-ink border-b md:border-b-0 md:border-r border-gold/10 flex flex-row md:flex-col py-2 md:py-8 overflow-x-auto md:overflow-y-auto custom-scrollbar shrink-0">
           {[
@@ -366,7 +366,7 @@ Regras:
         </aside>
 
         {/* Main Content Area */}
-        <main className="flex-1 overflow-y-auto bg-neutral-900 custom-scrollbar relative">
+        <main className="flex-1 overflow-y-auto bg-neutral-900 custom-scrollbar relative overscroll-contain">
           <div className="max-w-5xl mx-auto">
             {activeTab === 'sessions' && (
               <div className="space-y-12 pb-20">

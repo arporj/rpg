@@ -74,7 +74,7 @@ export default function Adventure() {
   if (!chronicle) return null;
 
   return (
-    <div className="flex flex-col md:flex-row h-screen bg-ink text-parchment overflow-hidden selection:bg-gold/30 selection:text-white">
+    <div className="flex flex-col md:flex-row h-screen h-[100dvh] bg-ink text-parchment overflow-hidden selection:bg-gold/30 selection:text-white">
       {/* Sidebar - Navigation */}
       <aside className={`
         fixed inset-y-0 left-0 z-50 w-72 bg-ink/98 border-r border-gold/20 flex flex-col shadow-2xl transition-transform duration-300 ease-in-out
@@ -142,7 +142,7 @@ export default function Adventure() {
       )}
 
       {/* Main Container */}
-      <div className="flex-1 flex flex-col relative min-w-0">
+      <div className="flex-1 flex flex-col relative min-w-0 min-h-0">
         {/* Top Player Bar */}
         <header className="h-auto md:h-20 bg-ink/90 backdrop-blur-md border-b border-gold/10 flex items-center justify-between px-4 md:px-8 z-30 sticky top-0 shadow-lg py-3 md:py-0">
           <div className="flex items-center gap-4 min-w-0 flex-1">
@@ -184,7 +184,7 @@ export default function Adventure() {
         </header>
 
         {/* Main Content Area */}
-        <main className="flex-1 relative overflow-y-auto bg-[url('https://www.transparenttextures.com/patterns/papyros.png')] bg-fixed custom-scrollbar">
+        <main className="flex-1 relative overflow-y-auto bg-[url('https://www.transparenttextures.com/patterns/papyros.png')] bg-scroll md:bg-fixed custom-scrollbar overscroll-contain">
         <AnimatePresence mode="wait">
           {activeSession ? (
             <motion.div
