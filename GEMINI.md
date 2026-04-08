@@ -1,4 +1,4 @@
-# Regras Locais - Crônicas do Códice
+# Regras Locais - O Tomo das Aventuras
 
 ## TypeScript & Build (Vercel)
 - **Tipagem Obrigatória em Callbacks**: Sempre utilize tipos explícitos para parâmetros em funções de callback como `.sort()`, `.map()`, `.filter()`, etc. 

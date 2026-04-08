@@ -11,7 +11,6 @@ export default function Home() {
 
   useEffect(() => {
     async function fetchChronicles() {
-      console.log('Fetching chronicles from rpg schema...');
       const { data, error } = await supabase
         .from('chronicles')
         .select('*, systems(*)');
