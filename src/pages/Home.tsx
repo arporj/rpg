@@ -47,7 +47,7 @@ export default function Home() {
             <Sparkles className="w-12 h-12 text-gold animate-pulse" />
           </div>
           <h1 className="text-6xl md:text-8xl font-cinzel font-bold text-gold tracking-tighter shadow-2xl">
-            Crônicas do Códice
+            O Tomo das Aventuras
           </h1>
           <p className="max-w-xl mx-auto text-parchment/60 text-lg md:text-xl italic">
             Onde as histórias ganham vida e os mundos se encontram. Escolha seu destino e inicie sua jornada.
