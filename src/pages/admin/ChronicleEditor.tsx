@@ -36,7 +36,7 @@ export default function ChronicleEditor() {
   async function fetchData() {
     setLoading(true);
     try {
-      const { data: chr } = await supabase.from('chronicles').select('*').eq('id', id).single();
+      const { data: chr } = await supabase.from('chronicles').select('*, systems(*)').eq('id', id).single();
       const { data: sess } = await supabase.from('sessions').select('*, chapters(*)').eq('chronicle_id', id).order('order_index', { ascending: true });
       const { data: plrs } = await supabase.from('players').select('*').eq('chronicle_id', id).order('real_name', { ascending: true });
       const { data: sys } = await supabase.from('systems').select('*');
@@ -178,7 +178,10 @@ Regras:
           description: player.description,
           face_url: player.face_url,
           body_url: player.body_url,
-          is_active: player.is_active
+          is_active: player.is_active,
+          race: player.race,
+          class: player.class,
+          level_points: player.level_points
         }).eq('id', player.id);
       }
 
@@ -490,115 +493,155 @@ Regras:
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                {players.map((p) => (
-                  <div key={p.id} className="bg-ink p-6 border border-gold/10 rounded-sm flex gap-6 group hover:border-gold/30 transition-all shadow-xl relative">
-                     <button 
-                      onClick={() => deletePlayer(p.id)}
-                      className="absolute top-2 right-2 p-2 text-neutral-800 hover:text-red-600 transition-colors opacity-0 group-hover:opacity-100"
-                     >
-                        <Trash2 size={16} />
-                     </button>
-                     <div className="space-y-4">
-                       <div className="w-24 h-24 rounded-full border-2 border-gold/20 overflow-hidden bg-neutral-800 shadow-inner">
-                         {p.face_url ? (
-                           <img 
-                            src={`${getStorageUrl(p.face_url)}?t=${Date.now()}`} 
-                            key={p.face_url}
-                            className="w-full h-full object-cover" 
-                           />
-                         ) : (
-                           <div className="w-full h-full flex items-center justify-center"><Users className="text-neutral-700" /></div>
-                         )}
-                       </div>
-                       <label className="flex items-center gap-2 text-[10px] font-bold text-gold cursor-pointer hover:text-yellow-400">
-                         <input 
-                          type="checkbox" 
-                          checked={p.is_active} 
-                          onChange={(e) => updatePlayer(p.id, { is_active: e.target.checked })}
-                          className="accent-gold w-4 h-4" 
-                         /> ATIVO
-                       </label>
-                     </div>
-                      <div className="flex-1 space-y-4">
-                        <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <label className="text-[10px] uppercase text-neutral-600 font-bold block mb-1">Nome do Personagem</label>
-                            <input 
-                            value={p.char_name} 
-                            onChange={(e) => updatePlayer(p.id, { char_name: e.target.value })}
-                            placeholder="Nome do Herói" 
-                            className="block w-full bg-transparent font-cinzel text-xl text-gold outline-none border-b border-transparent focus:border-gold pb-1" 
-                            />
+                {players.map((p) => {
+                  // Determina o rótulo do campo de avanço baseado no sistema
+                  const systemLabel = (chronicle as any).systems?.advancement_label || 'Nível';
+                  
+                  return (
+                    <div key={p.id} className="bg-ink p-8 border border-gold/10 rounded-sm group hover:border-gold/30 transition-all shadow-xl relative">
+                      {/* Delete Button */}
+                      <button 
+                        onClick={() => deletePlayer(p.id)}
+                        className="absolute top-4 right-4 p-2 text-neutral-800 hover:text-red-600 transition-colors opacity-0 group-hover:opacity-100"
+                      >
+                        <Trash2 size={18} />
+                      </button>
+
+                      <div className="flex flex-col gap-8">
+                        {/* Header: Photo + Names */}
+                        <div className="flex items-center gap-6">
+                          <div className="relative group/avatar">
+                            <div className="w-24 h-24 rounded-full border-2 border-gold/20 overflow-hidden bg-neutral-800 shadow-inner">
+                              {p.face_url ? (
+                                <img 
+                                  src={`${getStorageUrl(p.face_url)}?t=${Date.now()}`} 
+                                  key={p.face_url}
+                                  className="w-full h-full object-cover" 
+                                />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center"><Users className="text-neutral-700" size={32} /></div>
+                              )}
+                            </div>
+                            <label className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover/avatar:opacity-100 cursor-pointer transition-opacity rounded-full">
+                              <input type="file" className="hidden" accept="image/*" onChange={async (e) => {
+                                const file = e.target.files?.[0];
+                                if (!file) return;
+                                const fileName = `pic_plr_${(p.char_name || 'unknown').toLowerCase().replace(/\s/g, '_')}_face.jpg`;
+                                const path = await handleFileUpload(file, fileName, p.face_url);
+                                updatePlayer(p.id, { face_url: path });
+                              }}/>
+                              <Upload size={20} className="text-gold" />
+                            </label>
                           </div>
-                          <div>
-                            <label className="text-[10px] uppercase text-neutral-600 font-bold block mb-1">Jogador Real</label>
-                            <input 
-                            value={p.real_name} 
-                            onChange={(e) => updatePlayer(p.id, { real_name: e.target.value })}
-                            placeholder="Responsável" 
-                            className="block w-full bg-transparent text-sm text-neutral-300 outline-none italic border-b border-transparent focus:border-gold/30 pb-1" 
-                            />
+
+                          <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                              <label className="text-[10px] uppercase text-neutral-600 font-bold block mb-1 tracking-widest">Nome do Personagem</label>
+                              <input 
+                                value={p.char_name} 
+                                onChange={(e) => updatePlayer(p.id, { char_name: e.target.value })}
+                                placeholder="Nome do Herói" 
+                                className="block w-full bg-transparent font-cinzel text-2xl text-gold outline-none border-b border-neutral-800 focus:border-gold pb-1 transition-all" 
+                              />
+                            </div>
+                            <div>
+                              <label className="text-[10px] uppercase text-neutral-600 font-bold block mb-1 tracking-widest">Jogador Real</label>
+                              <input 
+                                value={p.real_name} 
+                                onChange={(e) => updatePlayer(p.id, { real_name: e.target.value })}
+                                placeholder="Responsável" 
+                                className="block w-full bg-transparent text-lg text-neutral-300 outline-none italic border-b border-neutral-800 focus:border-gold/30 pb-1 transition-all" 
+                              />
+                            </div>
                           </div>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-6">
-                           <div className="space-y-2">
-                              <label className="text-[10px] uppercase text-gold/40 font-bold block">Rosto (1:1)</label>
-                              <div className="w-full aspect-square bg-neutral-900 border border-neutral-800 rounded-sm relative group/face overflow-hidden">
-                                 {p.face_url ? (
-                                   <img src={`${getStorageUrl(p.face_url)}?t=${Date.now()}`} key={p.face_url} className="w-full h-full object-cover" />
-                                 ) : (
-                                   <div className="w-full h-full flex items-center justify-center opacity-20"><ImageIcon size={20}/></div>
-                                 )}
-                                 <label className="absolute inset-0 bg-black/80 flex items-center justify-center opacity-0 group-hover/face:opacity-100 cursor-pointer transition-opacity">
-                                    <input type="file" className="hidden" accept="image/*" onChange={async (e) => {
-                                      const file = e.target.files?.[0];
-                                      if (!file) return;
-                                      const fileName = `pic_plr_${p.char_name.toLowerCase().replace(/\s/g, '_')}_face.jpg`;
-                                      const path = await handleFileUpload(file, fileName, p.face_url);
-                                      updatePlayer(p.id, { face_url: path });
-                                    }}/>
-                                    <Upload size={16} className="text-gold" />
-                                 </label>
-                              </div>
-                              <p className="text-[8px] text-neutral-600 font-medium">Recomendado: 400x400px</p>
-                           </div>
-                           <div className="space-y-2">
-                              <label className="text-[10px] uppercase text-gold/40 font-bold block">Corpo Inteiro</label>
-                              <div className="w-full h-[100px] bg-neutral-900 border border-neutral-800 rounded-sm relative group/body overflow-hidden">
-                                {p.body_url ? (
-                                   <img src={`${getStorageUrl(p.body_url)}?t=${Date.now()}`} key={p.body_url} className="w-full h-full object-cover" />
-                                 ) : (
-                                   <div className="w-full h-full flex items-center justify-center opacity-20"><UserCheck size={20}/></div>
-                                 )}
-                                 <label className="absolute inset-0 bg-black/80 flex items-center justify-center opacity-0 group-hover/body:opacity-100 cursor-pointer transition-opacity">
-                                    <input type="file" className="hidden" accept="image/*" onChange={async (e) => {
-                                      const file = e.target.files?.[0];
-                                      if (!file) return;
-                                      const fileName = `pic_plr_${p.char_name.toLowerCase().replace(/\s/g, '_')}_body.jpg`;
-                                      const path = await handleFileUpload(file, fileName, p.body_url);
-                                      updatePlayer(p.id, { body_url: path });
-                                    }}/>
-                                    <Upload size={16} className="text-gold" />
-                                 </label>
-                              </div>
-                              <p className="text-[8px] text-neutral-600 font-medium whitespace-nowrap">Recomendado: Retrato (Ex: 800x1200px)</p>
-                           </div>
+                        {/* Middle section: Body image + Details */}
+                        <div className="flex flex-col md:flex-row gap-8">
+                          {/* Body Image (Portrait) */}
+                          <div className="space-y-2">
+                             <label className="text-[10px] uppercase text-gold/40 font-bold block tracking-widest">Corpo Inteiro</label>
+                             <div className="w-full md:w-32 aspect-[2/3] bg-neutral-900 border border-neutral-800 rounded-sm relative group/body overflow-hidden shadow-lg">
+                               {p.body_url ? (
+                                  <img 
+                                    src={`${getStorageUrl(p.body_url)}?t=${Date.now()}`} 
+                                    key={p.body_url} 
+                                    className="w-full h-full object-cover" 
+                                  />
+                                ) : (
+                                  <div className="w-full h-full flex items-center justify-center opacity-20"><UserCheck size={32}/></div>
+                                )}
+                                <label className="absolute inset-0 bg-black/80 flex items-center justify-center opacity-0 group-hover/body:opacity-100 cursor-pointer transition-opacity">
+                                   <input type="file" className="hidden" accept="image/*" onChange={async (e) => {
+                                     const file = e.target.files?.[0];
+                                     if (!file) return;
+                                     const fileName = `pic_plr_${(p.char_name || 'unknown').toLowerCase().replace(/\s/g, '_')}_body.jpg`;
+                                     const path = await handleFileUpload(file, fileName, p.body_url);
+                                     updatePlayer(p.id, { body_url: path });
+                                   }}/>
+                                   <Upload size={24} className="text-gold" />
+                                </label>
+                             </div>
+                             <p className="text-[8px] text-neutral-600 font-medium">Portrait: 800x1200px</p>
+                          </div>
+
+                          {/* Character Details */}
+                          <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
+                            <div>
+                              <label className="text-[10px] uppercase text-neutral-600 font-bold block mb-1 tracking-widest">Raça</label>
+                              <input 
+                                value={p.race || ''} 
+                                onChange={(e) => updatePlayer(p.id, { race: e.target.value })}
+                                placeholder="Ex: Humano, Elfo..." 
+                                className="w-full bg-neutral-800/30 border-b border-neutral-700/50 focus:border-gold outline-none px-2 py-1 text-neutral-200 text-sm"
+                              />
+                            </div>
+                            <div>
+                              <label className="text-[10px] uppercase text-neutral-600 font-bold block mb-1 tracking-widest">Classe</label>
+                              <input 
+                                value={p.class || ''} 
+                                onChange={(e) => updatePlayer(p.id, { class: e.target.value })}
+                                placeholder="Ex: Guerreiro, Mago..." 
+                                className="w-full bg-neutral-800/30 border-b border-neutral-700/50 focus:border-gold outline-none px-2 py-1 text-neutral-200 text-sm"
+                              />
+                            </div>
+                            <div>
+                              <label className="text-[10px] uppercase text-neutral-600 font-bold block mb-1 tracking-widest">{systemLabel}</label>
+                              <input 
+                                value={p.level_points || ''} 
+                                onChange={(e) => updatePlayer(p.id, { level_points: e.target.value })}
+                                placeholder={systemLabel === 'Pontos' ? '150' : '5'} 
+                                className="w-full bg-neutral-800/30 border-b border-neutral-700/50 focus:border-gold outline-none px-2 py-1 text-neutral-200 text-sm"
+                              />
+                            </div>
+                            <div className="md:col-span-3">
+                              <label className="flex items-center gap-2 text-[10px] font-bold text-gold cursor-pointer hover:text-yellow-400">
+                                <input 
+                                 type="checkbox" 
+                                 checked={p.is_active} 
+                                 onChange={(e) => updatePlayer(p.id, { is_active: e.target.checked })}
+                                 className="accent-gold w-4 h-4" 
+                                /> PERSONAGEM ATIVO NO GRUPO
+                              </label>
+                            </div>
+                          </div>
                         </div>
 
-                        <div>
-                          <label className="text-[10px] uppercase text-neutral-600 font-bold block mb-1">Descrição</label>
+                        {/* Footer: Description */}
+                        <div className="space-y-2">
+                          <label className="text-[10px] uppercase text-neutral-600 font-bold block mb-1 tracking-widest">Breve História / Descrição</label>
                           <textarea 
-                          value={p.description || ''} 
-                          onChange={(e) => updatePlayer(p.id, { description: e.target.value })}
-                          placeholder="Breve história..." 
-                          className="w-full bg-black/20 text-sm text-neutral-400 outline-none border border-neutral-800 p-2 rounded focus:border-gold/20 resize-none font-serif" 
-                          rows={2} 
+                            value={p.description || ''} 
+                            onChange={(e) => updatePlayer(p.id, { description: e.target.value })}
+                            placeholder="Descreva o herói e suas motivações..." 
+                            className="w-full bg-black/30 text-sm text-neutral-400 outline-none border border-neutral-800 p-4 rounded focus:border-gold/20 resize-none font-serif leading-relaxed" 
+                            rows={3} 
                           />
                         </div>
                       </div>
-                  </div>
-                ))}
+                    </div>
+                  );
+                })}
               </div>
            </div>
         )}

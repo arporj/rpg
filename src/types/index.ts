@@ -1,6 +1,7 @@
 export interface RPGSystem {
   id: string;
   name: string;
+  advancement_label?: string;
 }
 
 export interface Chronicle {
@@ -21,6 +22,9 @@ export interface Player {
   body_url: string;
   description: string;
   is_active: boolean;
+  race?: string;
+  class?: string;
+  level_points?: string;
 }
 
 export interface Session {

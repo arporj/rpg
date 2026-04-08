@@ -229,7 +229,7 @@ export default function Adventure() {
               onClick={() => setSelectedPlayer(null)}
               className="absolute inset-0 bg-black/90 backdrop-blur-sm"
             />
-            <motion.div 
+             <motion.div 
               initial={{ opacity: 0, scale: 0.9, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9, y: 20 }}
@@ -259,35 +259,64 @@ export default function Adventure() {
 
               {/* Player Info */}
               <div className="flex-1 p-12 flex flex-col justify-center space-y-8 bg-[url('https://www.transparenttextures.com/patterns/dark-leather.png')]">
-                 <div className="space-y-4">
-                   <div className="flex items-center gap-3">
-                      <div className="h-[2px] w-12 bg-gold" />
-                      <span className="text-xs uppercase tracking-[0.5em] text-gold font-bold">Ficha de Herói</span>
-                   </div>
-                   <h2 className="text-6xl font-cinzel text-parchment font-bold tracking-tighter leading-none uppercase">
-                     {selectedPlayer.char_name}
-                   </h2>
-                   <div className="flex items-center gap-3 text-gold/60 italic font-serif text-lg">
-                      <span>Jogador: {selectedPlayer.real_name}</span>
-                   </div>
-                 </div>
-
-                 <div className="h-[1px] w-full bg-gradient-to-r from-gold/30 to-transparent" />
-
                  <div className="space-y-6">
-                    <p className="text-xl leading-relaxed text-parchment/70 font-serif italic">
-                      {selectedPlayer.description || "Nenhuma história escrita nas estrelas... ainda."}
-                    </p>
-                 </div>
+                    {/* Character Header with Round Photo */}
+                    <div className="flex items-center gap-6 mb-4">
+                       <div className="w-20 h-20 rounded-full border-2 border-gold/30 overflow-hidden bg-ink shadow-xl">
+                          <img 
+                            src={getStorageUrl(selectedPlayer.face_url)} 
+                            alt={selectedPlayer.char_name}
+                            className="w-full h-full object-cover"
+                          />
+                       </div>
+                       <div className="space-y-1">
+                          <h2 className="text-5xl font-cinzel text-parchment font-bold tracking-tighter uppercase leading-none">
+                            {selectedPlayer.char_name}
+                          </h2>
+                          <div className="flex items-center gap-2 text-gold/60 italic font-serif text-lg">
+                             <span>Jogador: {selectedPlayer.real_name}</span>
+                          </div>
+                       </div>
+                    </div>
 
-                 <div className="pt-8 flex gap-6">
-                    <div className="px-6 py-4 bg-gold/5 border border-gold/20 rounded-sm">
-                       <p className="text-[10px] uppercase text-gold/40 font-bold mb-1">Status na Campanha</p>
-                       <p className="text-sm font-cinzel text-green-500 flex items-center gap-2">
-                          <CheckCircle2 size={14} /> Ativo no Grupo
+                    <div className="h-[1px] w-full bg-gradient-to-r from-gold/30 to-transparent" />
+                    
+                    {/* Race, Class, Level Grid */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 py-4">
+                       <div className="space-y-1">
+                          <p className="text-[10px] uppercase text-gold/40 font-bold tracking-widest">Raça</p>
+                          <p className="text-xl font-cinzel text-parchment">{selectedPlayer.race || "—"}</p>
+                       </div>
+                       <div className="space-y-1">
+                          <p className="text-[10px] uppercase text-gold/40 font-bold tracking-widest">Classe</p>
+                          <p className="text-xl font-cinzel text-parchment">{selectedPlayer.class || "—"}</p>
+                       </div>
+                       <div className="space-y-1">
+                          <p className="text-[10px] uppercase text-gold/40 font-bold tracking-widest">
+                            {(chronicle as any)?.systems?.advancement_label || 'Nível'}
+                          </p>
+                          <p className="text-xl font-cinzel text-gold">{selectedPlayer.level_points || "—"}</p>
+                       </div>
+                    </div>
+
+                    <div className="h-[1px] w-full bg-gradient-to-r from-gold/30 to-transparent" />
+
+                    {/* Description */}
+                    <div className="space-y-2">
+                       <p className="text-[10px] uppercase text-gold/40 font-bold tracking-widest">História & Notas</p>
+                       <p className="text-lg leading-relaxed text-parchment/80 font-serif italic max-h-48 overflow-y-auto pr-4 custom-scrollbar">
+                         {selectedPlayer.description || "Nenhuma história escrita nas estrelas... ainda."}
                        </p>
                     </div>
-                    {/* Placeholder for more stats if needed */}
+                 </div>
+
+                 <div className="pt-4 flex gap-6">
+                    <div className="px-6 py-3 bg-gold/5 border border-gold/20 rounded-sm">
+                       <p className="text-[8px] uppercase text-gold/40 font-bold mb-1 tracking-[0.2em]">Status</p>
+                       <p className="text-[10px] font-cinzel text-green-500 flex items-center gap-2 font-bold whitespace-nowrap">
+                          <CheckCircle2 size={12} /> PERSONAGEM ATIVO
+                       </p>
+                    </div>
                  </div>
               </div>
             </motion.div>
