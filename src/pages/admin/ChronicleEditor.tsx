@@ -500,7 +500,15 @@ Regras:
                      </button>
                      <div className="space-y-4">
                        <div className="w-24 h-24 rounded-full border-2 border-gold/20 overflow-hidden bg-neutral-800 shadow-inner">
-                         {p.face_url ? <img src={getStorageUrl(p.face_url)} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center"><Users className="text-neutral-700" /></div>}
+                         {p.face_url ? (
+                           <img 
+                            src={`${getStorageUrl(p.face_url)}?t=${Date.now()}`} 
+                            key={p.face_url}
+                            className="w-full h-full object-cover" 
+                           />
+                         ) : (
+                           <div className="w-full h-full flex items-center justify-center"><Users className="text-neutral-700" /></div>
+                         )}
                        </div>
                        <label className="flex items-center gap-2 text-[10px] font-bold text-gold cursor-pointer hover:text-yellow-400">
                          <input 
@@ -538,7 +546,7 @@ Regras:
                               <label className="text-[10px] uppercase text-gold/40 font-bold block">Rosto (1:1)</label>
                               <div className="w-full aspect-square bg-neutral-900 border border-neutral-800 rounded-sm relative group/face overflow-hidden">
                                  {p.face_url ? (
-                                   <img src={getStorageUrl(p.face_url)} className="w-full h-full object-cover" />
+                                   <img src={`${getStorageUrl(p.face_url)}?t=${Date.now()}`} key={p.face_url} className="w-full h-full object-cover" />
                                  ) : (
                                    <div className="w-full h-full flex items-center justify-center opacity-20"><ImageIcon size={20}/></div>
                                  )}
@@ -559,7 +567,7 @@ Regras:
                               <label className="text-[10px] uppercase text-gold/40 font-bold block">Corpo Inteiro</label>
                               <div className="w-full h-[100px] bg-neutral-900 border border-neutral-800 rounded-sm relative group/body overflow-hidden">
                                 {p.body_url ? (
-                                   <img src={getStorageUrl(p.body_url)} className="w-full h-full object-cover" />
+                                   <img src={`${getStorageUrl(p.body_url)}?t=${Date.now()}`} key={p.body_url} className="w-full h-full object-cover" />
                                  ) : (
                                    <div className="w-full h-full flex items-center justify-center opacity-20"><UserCheck size={20}/></div>
                                  )}
