@@ -60,11 +60,8 @@ export default function ChronicleEditor() {
 
   // --- Upload Logic ---
   const handleFileUpload = async (file: File, path: string, existingPath: string | null) => {
-    // 1. If existingPath exists and is different from current path, we might want to delete it 
-    // but the user said "assume the name of the one being deleted".
-    // So if existingPath is not null, we just use it.
-    
-    const targetPath = existingPath || path;
+    // Só reutiliza o caminho se for um caminho interno do storage (não começa com http)
+    const targetPath = (existingPath && !existingPath.startsWith('http')) ? existingPath : path;
     
     const { data, error } = await supabase.storage
       .from(STORAGE_BUCKET)
