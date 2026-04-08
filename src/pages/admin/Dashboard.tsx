@@ -48,7 +48,7 @@ export default function Dashboard() {
       <header className="bg-ink border-b border-gold/20 p-6 flex justify-between items-center">
         <div className="flex items-center gap-4">
           <BookOpen className="w-8 h-8 text-gold" />
-          <h1 className="text-2xl font-cinzel tracking-widest uppercase">Grimório Administrativo</h1>
+          <h1 className="text-2xl font-cinzel tracking-widest uppercase">Tomo Administrativo</h1>
         </div>
         <button 
           onClick={handleLogout}

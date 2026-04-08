@@ -64,7 +64,7 @@ export default function Adventure() {
       <div className="min-h-screen bg-ink flex items-center justify-center">
         <div className="text-center">
           <Loader2 className="w-16 h-16 text-gold animate-spin mx-auto mb-4" />
-          <p className="font-cinzel text-gold tracking-widest">Invocando o Grimório...</p>
+          <p className="font-cinzel text-gold tracking-widest">Abrindo o Tomo...</p>
         </div>
       </div>
     );
@@ -151,7 +151,7 @@ export default function Adventure() {
                 <p className="text-sm font-cinzel text-parchment leading-none">{chronicle.title}</p>
              </div>
              <div className="w-[1px] h-8 bg-gold/10" />
-             <button onClick={() => navigate('/')} className="text-gold/40 hover:text-gold transition-colors p-2 underline text-xs uppercase tracking-widest font-bold">Voltar ao Códice</button>
+             <button onClick={() => navigate('/')} className="text-gold/40 hover:text-gold transition-colors p-2 underline text-xs uppercase tracking-widest font-bold">Voltar ao Tomo</button>
           </div>
         </header>
 
