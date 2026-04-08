@@ -37,7 +37,8 @@ export default function ChronicleEditor() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'success' | 'error'>('idle');
-  const [activeTab, setActiveTab] = useState<'sessions' | 'players' | 'settings'>('sessions');
+  const [activeTab, setActiveTab] = useState<'sessions' | 'players' | 'aventura'>('sessions');
+  const [isDirty, setIsDirty] = useState({ sessions: false, players: false, aventura: false });
   const [showPromptModal, setShowPromptModal] = useState(false);
   const [generatedPrompt, setGeneratedPrompt] = useState('');
   const [isGeneratingPrompt, setIsGeneratingPrompt] = useState(false);
@@ -147,22 +148,19 @@ Regras:
     setTimeout(() => setCopySuccess(false), 2000);
   };
 
-  // --- Global Save ---
-  const saveAll = async () => {
-    if (!chronicle || !id) return;
+  // --- Section Saves ---
+  const handleTabChange = (newTab: 'sessions' | 'players' | 'aventura') => {
+    if (isDirty[activeTab] && !window.confirm("Você tem alterações não salvas nesta aba. Deseja sair sem salvar?")) {
+      return;
+    }
+    setActiveTab(newTab);
+  };
+
+  const saveSessions = async () => {
+    if (!id) return;
     setSaving(true);
     setSaveStatus('saving');
-    
     try {
-      // 1. Save Chronicle Metadata
-      await supabase.from('chronicles').update({
-        title: chronicle.title,
-        master_name: chronicle.master_name,
-        system_id: chronicle.system_id,
-        slug: chronicle.slug
-      }).eq('id', id);
-
-      // 2. Save Sessions & Chapters
       for (const session of sessions) {
         await supabase.from('sessions').update({
           title: session.title,
@@ -181,8 +179,21 @@ Regras:
           }
         }
       }
+      setIsDirty({ ...isDirty, sessions: false });
+      setSaveStatus('success');
+      setTimeout(() => setSaveStatus('idle'), 3000);
+    } catch (err) {
+      console.error('Save sessions error:', err);
+      setSaveStatus('error');
+    }
+    setSaving(false);
+  };
 
-      // 3. Save Players
+  const savePlayers = async () => {
+    if (!id) return;
+    setSaving(true);
+    setSaveStatus('saving');
+    try {
       for (const player of players) {
         await supabase.from('players').update({
           real_name: player.real_name,
@@ -196,11 +207,32 @@ Regras:
           level_points: player.level_points
         }).eq('id', player.id);
       }
-
+      setIsDirty({ ...isDirty, players: false });
       setSaveStatus('success');
       setTimeout(() => setSaveStatus('idle'), 3000);
     } catch (err) {
-      console.error('Save error:', err);
+      console.error('Save players error:', err);
+      setSaveStatus('error');
+    }
+    setSaving(false);
+  };
+
+  const saveAventura = async () => {
+    if (!chronicle || !id) return;
+    setSaving(true);
+    setSaveStatus('saving');
+    try {
+      await supabase.from('chronicles').update({
+        title: chronicle.title,
+        master_name: chronicle.master_name,
+        system_id: chronicle.system_id,
+        slug: chronicle.slug
+      }).eq('id', id);
+      setIsDirty({ ...isDirty, aventura: false });
+      setSaveStatus('success');
+      setTimeout(() => setSaveStatus('idle'), 3000);
+    } catch (err) {
+      console.error('Save aventura error:', err);
       setSaveStatus('error');
     }
     setSaving(false);
@@ -290,7 +322,7 @@ Regras:
   if (loading || !chronicle) return <div className="flex justify-center p-20"><Loader2 className="animate-spin text-gold" size={48} /></div>;
 
   return (
-    <div className="min-h-screen bg-neutral-900 text-white font-sans">
+    <div className="min-h-screen bg-neutral-900 text-white font-sans flex flex-col">
       <header className="bg-ink border-b border-gold/20 p-4 sticky top-0 z-40 flex items-center justify-between shadow-xl">
         <div className="flex items-center gap-4">
           <button onClick={() => navigate('/admin/dashboard')} className="hover:text-gold transition-colors p-2"><ArrowLeft /></button>
@@ -302,50 +334,59 @@ Regras:
         <div className="flex items-center gap-4">
           {saveStatus === 'success' && <span className="text-green-500 text-sm flex items-center gap-1"><CheckCircle2 size={16}/> Salvo com sucesso</span>}
           {saveStatus === 'error' && <span className="text-red-500 text-sm flex items-center gap-1"><XCircle size={16}/> Erro ao salvar</span>}
-          <button 
-            onClick={saveAll} 
-            disabled={saving}
-            className="bg-gold text-ink px-6 py-2.5 rounded-sm flex items-center gap-2 font-bold hover:bg-yellow-500 transition-all shadow-lg disabled:opacity-50"
-          >
-            {saving ? <Loader2 size={18} className="animate-spin" /> : <Save size={18}/>}
-            {saving ? 'Salvando...' : 'Salvar Tudo'}
-          </button>
         </div>
       </header>
 
-      <div className="max-w-6xl mx-auto p-6">
-        {/* Tabs */}
-        <div className="flex gap-8 mb-10 border-b border-neutral-800">
+      <div className="flex-1 flex overflow-hidden">
+        {/* Sidebar */}
+        <aside className="w-64 bg-ink border-r border-gold/10 flex flex-col py-8 overflow-y-auto">
           {[
             { id: 'sessions', label: 'Jornada', icon: Book },
             { id: 'players', label: 'Grupo', icon: Users },
-            { id: 'settings', label: 'Meta', icon: MessageSquare },
+            { id: 'aventura', label: 'Aventura', icon: MessageSquare },
           ].map(tab => (
             <button 
               key={tab.id}
-              onClick={() => setActiveTab(tab.id as any)}
-              className={`pb-4 flex items-center gap-2 font-cinzel tracking-widest text-sm transition-all relative ${
-                activeTab === tab.id ? 'text-gold' : 'text-neutral-500 hover:text-neutral-300'
+              onClick={() => handleTabChange(tab.id as any)}
+              className={`px-8 py-4 flex items-center gap-4 font-cinzel tracking-widest text-sm transition-all border-l-2 relative ${
+                activeTab === tab.id 
+                  ? 'text-gold border-gold bg-gold/5' 
+                  : 'text-neutral-500 border-transparent hover:text-neutral-300 hover:bg-white/5'
               }`}
             >
-              <tab.icon size={16} />
+              <tab.icon size={18} />
               {tab.label}
-              {activeTab === tab.id && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gold" />}
+              {isDirty[tab.id as keyof typeof isDirty] && (
+                <div className="absolute right-4 w-1.5 h-1.5 rounded-full bg-gold animate-pulse" />
+              )}
             </button>
           ))}
-        </div>
+        </aside>
 
-        {activeTab === 'sessions' && (
-          <div className="space-y-12">
-            <div className="flex justify-between items-center bg-neutral-800/30 p-4 rounded-sm border border-neutral-700/50">
-              <div>
-                <h2 className="text-xl font-cinzel text-gold uppercase tracking-tighter">Estrutura das Crônicas</h2>
-                <p className="text-sm text-neutral-500 italic">Organize suas sessões e capítulos narrativos</p>
-              </div>
-              <button onClick={addSession} className="bg-neutral-800 hover:bg-neutral-700 px-4 py-2 rounded-sm flex items-center gap-2 border border-gold/30 text-gold font-bold text-sm transition-colors">
-                <Plus size={16}/> Nova Sessão
-              </button>
-            </div>
+        {/* Main Content Area */}
+        <main className="flex-1 overflow-y-auto bg-neutral-900 custom-scrollbar">
+          <div className="max-w-5xl mx-auto p-10">
+            {activeTab === 'sessions' && (
+              <div className="space-y-12">
+                <div className="flex justify-between items-center bg-neutral-800/30 p-6 rounded-sm border border-neutral-700/50">
+                  <div>
+                    <h2 className="text-xl font-cinzel text-gold uppercase tracking-tighter">Estrutura das Crônicas</h2>
+                    <p className="text-sm text-neutral-500 italic">Organize suas sessões e capítulos narrativos</p>
+                  </div>
+                  <div className="flex gap-4">
+                    <button onClick={addSession} className="bg-neutral-800 hover:bg-neutral-700 px-4 py-2 rounded-sm flex items-center gap-2 border border-gold/30 text-gold font-bold text-sm transition-colors">
+                      <Plus size={16}/> Nova Sessão
+                    </button>
+                    <button 
+                      onClick={saveSessions} 
+                      disabled={saving || !isDirty.sessions}
+                      className="bg-gold text-ink px-6 py-2 rounded-sm flex items-center gap-2 font-bold hover:bg-yellow-500 transition-all shadow-lg disabled:opacity-30"
+                    >
+                      {saving ? <Loader2 size={18} className="animate-spin" /> : <Save size={18}/>}
+                      {saving ? 'Salvando...' : 'Salvar Jornada'}
+                    </button>
+                  </div>
+                </div>
 
             {sessions.length === 0 && (
               <div className="text-center py-20 border-2 border-dashed border-neutral-800 rounded">
@@ -364,6 +405,7 @@ Regras:
                         onChange={(e) => {
                           const newTitle = e.target.value;
                           setSessions(sessions.map(s => s.id === session.id ? { ...s, title: newTitle } : s));
+                          setIsDirty({ ...isDirty, sessions: true });
                         }}
                         placeholder="Ex: O Despertar da Churrasqueira"
                         className="bg-transparent border-b border-transparent focus:border-gold outline-none text-gold font-cinzel text-lg w-full"
@@ -376,6 +418,7 @@ Regras:
                         onChange={(e) => {
                           const newDate = e.target.value;
                           setSessions(sessions.map(s => s.id === session.id ? { ...s, date_str: newDate } : s));
+                          setIsDirty({ ...isDirty, sessions: true });
                         }}
                         placeholder="Ex: Dia 1"
                         className="bg-transparent border-b border-transparent focus:border-gold outline-none text-neutral-400 text-sm italic"
@@ -402,80 +445,83 @@ Regras:
                           <button onClick={() => moveChapter(session.id, chapter.id, 'down')} className="p-1 hover:text-gold text-neutral-600 transition-colors"><ChevronDown size={20}/></button>
                         </div>
                         <div className="flex-1 space-y-6">
-                          {/* 1. Título do Capítulo */}
-                          <div>
-                            <label className="text-[10px] text-gold/60 font-bold uppercase tracking-widest block mb-2">Título do Capítulo</label>
-                            <input 
-                              value={chapter.title}
-                              placeholder="Nome do Capítulo"
-                              onChange={(e) => {
-                                const newTitle = e.target.value;
-                                setSessions(sessions.map(s => s.id === session.id ? { ...s, chapters: s.chapters?.map(c => c.id === chapter.id ? { ...c, title: newTitle } : c) } : s));
-                              }}
-                              className="w-full bg-transparent text-parchment font-cinzel text-xl border-b border-neutral-700 focus:border-gold outline-none pb-2 transition-all"
-                            />
-                          </div>
+                              {/* 1. Título do Capítulo */}
+                              <div>
+                                <label className="text-[10px] text-gold/60 font-bold uppercase tracking-widest block mb-2">Título do Capítulo</label>
+                                <input 
+                                  value={chapter.title}
+                                  placeholder="Nome do Capítulo"
+                                  onChange={(e) => {
+                                    const newTitle = e.target.value;
+                                    setSessions(sessions.map(s => s.id === session.id ? { ...s, chapters: s.chapters?.map(c => c.id === chapter.id ? { ...c, title: newTitle } : c) } : s));
+                                    setIsDirty({ ...isDirty, sessions: true });
+                                  }}
+                                  className="w-full bg-transparent text-parchment font-cinzel text-xl border-b border-neutral-700 focus:border-gold outline-none pb-2 transition-all"
+                                />
+                              </div>
 
-                          {/* 2. Ilustração (16:9) */}
-                          <div className="space-y-3">
-                            <label className="text-[10px] text-gold/60 font-bold uppercase tracking-widest block">Ilustração do Capítulo</label>
-                            
-                            <div className="aspect-video w-full bg-neutral-900 rounded border border-neutral-700 flex items-center justify-center overflow-hidden relative group/img shadow-2xl">
-                               {chapter.image_url ? (
-                                 <img 
-                                  src={`${getStorageUrl(chapter.image_url)}?t=${Date.now()}`} 
-                                  key={chapter.image_url}
-                                  className="w-full h-full object-cover opacity-80 group-hover/img:opacity-100 transition-opacity" 
-                                 />
-                               ) : (
-                                 <div className="flex flex-col items-center gap-2 opacity-20">
-                                   <ImageIcon size={48} />
-                                   <span className="text-[10px] uppercase font-bold tracking-tighter">Sem Imagem</span>
+                              {/* 2. Ilustração (16:9) */}
+                              <div className="space-y-3">
+                                <label className="text-[10px] text-gold/60 font-bold uppercase tracking-widest block">Ilustração do Capítulo</label>
+                                
+                                <div className="aspect-video w-full bg-neutral-900 rounded border border-neutral-700 flex items-center justify-center overflow-hidden relative group/img shadow-2xl">
+                                   {chapter.image_url ? (
+                                     <img 
+                                      src={`${getStorageUrl(chapter.image_url)}?t=${Date.now()}`} 
+                                      key={chapter.image_url}
+                                      className="w-full h-full object-cover opacity-80 group-hover/img:opacity-100 transition-opacity" 
+                                     />
+                                   ) : (
+                                     <div className="flex flex-col items-center gap-2 opacity-20">
+                                       <ImageIcon size={48} />
+                                       <span className="text-[10px] uppercase font-bold tracking-tighter">Sem Imagem</span>
+                                     </div>
+                                   )}
+                                   <label className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center opacity-0 group-hover/img:opacity-100 transition-opacity cursor-pointer backdrop-blur-[2px]">
+                                      <input 
+                                        type="file" 
+                                        accept="image/*"
+                                        className="hidden" 
+                                        onChange={async (e) => {
+                                          const file = e.target.files?.[0];
+                                          if (!file) return;
+                                          const fileName = `pic_chr${chronicle.id.slice(0,4)}_cap${chapter.id.slice(0,4)}.jpg`;
+                                          const path = await handleFileUpload(file, fileName, chapter.image_url);
+                                          setSessions(sessions.map(s => s.id === session.id ? { ...s, chapters: s.chapters?.map(c => c.id === chapter.id ? { ...c, image_url: path } : c) } : s));
+                                          setIsDirty({ ...isDirty, sessions: true });
+                                        }}
+                                      />
+                                      <Upload className="text-gold mb-2" size={32} />
+                                      <span className="text-xs font-bold text-white uppercase tracking-widest">Fazer Upload Ilustração</span>
+                                      <p className="text-[10px] text-gold/60 mt-1">AR 16:9 (1920x1080px)</p>
+                                   </label>
+                                </div>
+                              </div>
+
+                              {/* 3. Narrativa (Texto) */}
+                              <div className="space-y-2">
+                                 <div className="flex justify-between items-center mb-2">
+                                   <label className="text-[10px] text-gold/60 font-bold uppercase tracking-widest block">Narrativa do Capítulo</label>
+                                   <button 
+                                    onClick={() => handleGeneratePrompt(chapter)}
+                                    title="Gerar Prompt sugerido para IA"
+                                    className="flex items-center gap-1 text-[9px] uppercase font-bold text-gold/40 hover:text-gold transition-colors bg-gold/5 px-2 py-1 rounded-sm border border-gold/10"
+                                   >
+                                    <Wand2 size={12} /> Prompt IA Mágico
+                                   </button>
                                  </div>
-                               )}
-                               <label className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center opacity-0 group-hover/img:opacity-100 transition-opacity cursor-pointer backdrop-blur-[2px]">
-                                  <input 
-                                    type="file" 
-                                    accept="image/*"
-                                    className="hidden" 
-                                    onChange={async (e) => {
-                                      const file = e.target.files?.[0];
-                                      if (!file) return;
-                                      const fileName = `pic_chr${chronicle.id.slice(0,4)}_cap${chapter.id.slice(0,4)}.jpg`;
-                                      const path = await handleFileUpload(file, fileName, chapter.image_url);
-                                      setSessions(sessions.map(s => s.id === session.id ? { ...s, chapters: s.chapters?.map(c => c.id === chapter.id ? { ...c, image_url: path } : c) } : s));
+                                 <textarea 
+                                    value={chapter.content}
+                                    placeholder="Conte a história aqui..."
+                                    rows={10}
+                                    onChange={(e) => {
+                                      const newVal = e.target.value;
+                                      setSessions(sessions.map(s => s.id === session.id ? { ...s, chapters: s.chapters?.map(c => c.id === chapter.id ? { ...c, content: newVal } : c) } : s));
+                                      setIsDirty({ ...isDirty, sessions: true });
                                     }}
-                                  />
-                                  <Upload className="text-gold mb-2" size={32} />
-                                  <span className="text-xs font-bold text-white uppercase tracking-widest">Fazer Upload Ilustração</span>
-                                  <p className="text-[10px] text-gold/60 mt-1">AR 16:9 (1920x1080px)</p>
-                               </label>
-                            </div>
-                          </div>
-
-                          {/* 3. Narrativa (Texto) */}
-                          <div className="space-y-2">
-                             <div className="flex justify-between items-center mb-2">
-                               <label className="text-[10px] text-gold/60 font-bold uppercase tracking-widest block">Narrativa do Capítulo</label>
-                               <button 
-                                onClick={() => handleGeneratePrompt(chapter)}
-                                title="Gerar Prompt sugerido para IA"
-                                className="flex items-center gap-1 text-[9px] uppercase font-bold text-gold/40 hover:text-gold transition-colors bg-gold/5 px-2 py-1 rounded-sm border border-gold/10"
-                               >
-                                <Wand2 size={12} /> Prompt IA Mágico
-                               </button>
-                             </div>
-                             <textarea 
-                                value={chapter.content}
-                                placeholder="Conte a história aqui..."
-                                rows={10}
-                                onChange={(e) => {
-                                  const newVal = e.target.value;
-                                  setSessions(sessions.map(s => s.id === session.id ? { ...s, chapters: s.chapters?.map(c => c.id === chapter.id ? { ...c, content: newVal } : c) } : s));
-                                }}
-                                className="w-full bg-ink/30 border border-neutral-700/50 p-6 rounded text-parchment/90 text-base focus:border-gold outline-none leading-relaxed resize-none font-merriweather shadow-inner min-h-[300px]"
-                             />
-                          </div>
+                                    className="w-full bg-ink/30 border border-neutral-700/50 p-6 rounded text-parchment/90 text-base focus:border-gold outline-none leading-relaxed resize-none font-merriweather shadow-inner min-h-[300px]"
+                                 />
+                              </div>
                         </div>
                         <button 
                           onClick={() => deleteChapter(session.id, chapter.id)}
@@ -494,14 +540,24 @@ Regras:
 
         {activeTab === 'players' && (
            <div className="space-y-10">
-              <div className="flex justify-between items-center bg-neutral-800/30 p-4 rounded-sm border border-neutral-700/50">
+              <div className="flex justify-between items-center bg-neutral-800/30 p-6 rounded-sm border border-neutral-700/50">
                 <div>
                   <h2 className="text-xl font-cinzel text-gold uppercase tracking-tighter">O Grupo de Aventureiros</h2>
                   <p className="text-sm text-neutral-500 italic">Gerencie os personagens que fazem parte desta jornada</p>
                 </div>
-                <button onClick={addPlayer} className="bg-gold text-ink font-bold px-5 py-2 rounded-sm flex items-center gap-2 hover:bg-yellow-500 transition-all text-sm">
-                  <Plus size={16}/> Novo Jogador
-                </button>
+                <div className="flex gap-4">
+                  <button onClick={addPlayer} className="bg-neutral-800 hover:bg-neutral-700 px-4 py-2 rounded-sm flex items-center gap-2 border border-gold/30 text-gold font-bold text-sm transition-colors">
+                    <Plus size={16}/> Novo Jogador
+                  </button>
+                  <button 
+                    onClick={savePlayers} 
+                    disabled={saving || !isDirty.players}
+                    className="bg-gold text-ink px-6 py-2 rounded-sm flex items-center gap-2 font-bold hover:bg-yellow-500 transition-all shadow-lg disabled:opacity-30"
+                  >
+                    {saving ? <Loader2 size={18} className="animate-spin" /> : <Save size={18}/>}
+                    {saving ? 'Salvar Grupo' : 'Salvar Grupo'}
+                  </button>
+                </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -551,7 +607,10 @@ Regras:
                               <label className="text-[10px] uppercase text-neutral-600 font-bold block mb-1 tracking-widest">Nome do Personagem</label>
                               <input 
                                 value={p.char_name} 
-                                onChange={(e) => updatePlayer(p.id, { char_name: e.target.value })}
+                                onChange={(e) => {
+                                  updatePlayer(p.id, { char_name: e.target.value });
+                                  setIsDirty({ ...isDirty, players: true });
+                                }}
                                 placeholder="Nome do Herói" 
                                 className="block w-full bg-transparent font-cinzel text-2xl text-gold outline-none border-b border-neutral-800 focus:border-gold pb-1 transition-all" 
                               />
@@ -560,7 +619,10 @@ Regras:
                               <label className="text-[10px] uppercase text-neutral-600 font-bold block mb-1 tracking-widest">Jogador Real</label>
                               <input 
                                 value={p.real_name} 
-                                onChange={(e) => updatePlayer(p.id, { real_name: e.target.value })}
+                                onChange={(e) => {
+                                  updatePlayer(p.id, { real_name: e.target.value });
+                                  setIsDirty({ ...isDirty, players: true });
+                                }}
                                 placeholder="Responsável" 
                                 className="block w-full bg-transparent text-lg text-neutral-300 outline-none italic border-b border-neutral-800 focus:border-gold/30 pb-1 transition-all" 
                               />
@@ -590,6 +652,7 @@ Regras:
                                      const fileName = `pic_plr_${slugify(p.char_name || 'unknown')}_body.jpg`;
                                      const path = await handleFileUpload(file, fileName, p.body_url);
                                      updatePlayer(p.id, { body_url: path });
+                                     setIsDirty({ ...isDirty, players: true });
                                    }}/>
                                    <Upload size={24} className="text-gold" />
                                 </label>
@@ -603,7 +666,10 @@ Regras:
                               <label className="text-[10px] uppercase text-neutral-600 font-bold block mb-1 tracking-widest">Raça</label>
                               <input 
                                 value={p.race || ''} 
-                                onChange={(e) => updatePlayer(p.id, { race: e.target.value })}
+                                onChange={(e) => {
+                                  updatePlayer(p.id, { race: e.target.value });
+                                  setIsDirty({ ...isDirty, players: true });
+                                }}
                                 placeholder="Ex: Humano, Elfo..." 
                                 className="w-full bg-neutral-800/30 border-b border-neutral-700/50 focus:border-gold outline-none px-2 py-1 text-neutral-200 text-sm"
                               />
@@ -612,7 +678,10 @@ Regras:
                               <label className="text-[10px] uppercase text-neutral-600 font-bold block mb-1 tracking-widest">Classe</label>
                               <input 
                                 value={p.class || ''} 
-                                onChange={(e) => updatePlayer(p.id, { class: e.target.value })}
+                                onChange={(e) => {
+                                  updatePlayer(p.id, { class: e.target.value });
+                                  setIsDirty({ ...isDirty, players: true });
+                                }}
                                 placeholder="Ex: Guerreiro, Mago..." 
                                 className="w-full bg-neutral-800/30 border-b border-neutral-700/50 focus:border-gold outline-none px-2 py-1 text-neutral-200 text-sm"
                               />
@@ -621,7 +690,10 @@ Regras:
                               <label className="text-[10px] uppercase text-neutral-600 font-bold block mb-1 tracking-widest">{systemLabel}</label>
                               <input 
                                 value={p.level_points || ''} 
-                                onChange={(e) => updatePlayer(p.id, { level_points: e.target.value })}
+                                onChange={(e) => {
+                                  updatePlayer(p.id, { level_points: e.target.value });
+                                  setIsDirty({ ...isDirty, players: true });
+                                }}
                                 placeholder={systemLabel === 'Pontos' ? '150' : '5'} 
                                 className="w-full bg-neutral-800/30 border-b border-neutral-700/50 focus:border-gold outline-none px-2 py-1 text-neutral-200 text-sm"
                               />
@@ -631,7 +703,10 @@ Regras:
                                 <input 
                                  type="checkbox" 
                                  checked={p.is_active} 
-                                 onChange={(e) => updatePlayer(p.id, { is_active: e.target.checked })}
+                                 onChange={(e) => {
+                                  updatePlayer(p.id, { is_active: e.target.checked });
+                                  setIsDirty({ ...isDirty, players: true });
+                                 }}
                                  className="accent-gold w-4 h-4" 
                                 /> PERSONAGEM ATIVO
                               </label>
@@ -644,7 +719,10 @@ Regras:
                           <label className="text-[10px] uppercase text-neutral-600 font-bold block mb-1 tracking-widest">Breve História / Descrição</label>
                           <textarea 
                             value={p.description || ''} 
-                            onChange={(e) => updatePlayer(p.id, { description: e.target.value })}
+                            onChange={(e) => {
+                              updatePlayer(p.id, { description: e.target.value });
+                              setIsDirty({ ...isDirty, players: true });
+                            }}
                             placeholder="Descreva o herói e suas motivações..." 
                             className="w-full bg-black/30 text-sm text-neutral-400 outline-none border border-neutral-800 p-4 rounded focus:border-gold/20 resize-none font-serif leading-relaxed" 
                             rows={3} 
@@ -658,18 +736,37 @@ Regras:
            </div>
         )}
 
-        {activeTab === 'settings' && (
-          <div className="max-w-2xl bg-ink p-10 border border-gold/10 rounded-sm space-y-10 shadow-2xl">
+        {activeTab === 'aventura' && (
+          <div className="space-y-8">
+            <div className="flex justify-between items-center bg-neutral-800/30 p-6 rounded-sm border border-neutral-700/50">
+              <div>
+                <h2 className="text-xl font-cinzel text-gold uppercase tracking-tighter">Metadados da Crônica</h2>
+                <p className="text-sm text-neutral-500 italic">Configurações globais e link de acesso</p>
+              </div>
+              <button 
+                onClick={saveAventura} 
+                disabled={saving || !isDirty.aventura}
+                className="bg-gold text-ink px-6 py-2 rounded-sm flex items-center gap-2 font-bold hover:bg-yellow-500 transition-all shadow-lg disabled:opacity-30"
+              >
+                {saving ? <Loader2 size={18} className="animate-spin" /> : <Save size={18}/>}
+                {saving ? 'Salvando...' : 'Salvar Aventura'}
+              </button>
+            </div>
+
+            <div className="max-w-2xl bg-ink p-10 border border-gold/10 rounded-sm space-y-10 shadow-2xl">
               <div>
                 <h3 className="font-cinzel text-gold text-xl mb-6 flex items-center gap-3">
-                  <MessageSquare size={20} /> Metadados da Crônica
+                  <MessageSquare size={20} /> Identidade da Campanha
                 </h3>
                 <div className="space-y-6">
                    <div className="space-y-2">
                      <label className="text-xs uppercase tracking-widest text-gold/60 font-bold">Título Principal</label>
                      <input 
                        value={chronicle.title} 
-                       onChange={(e) => setChronicle({...chronicle, title: e.target.value})}
+                       onChange={(e) => {
+                         setChronicle({...chronicle, title: e.target.value});
+                         setIsDirty({ ...isDirty, aventura: true });
+                       }}
                        className="w-full bg-neutral-800/50 border border-neutral-700 p-4 rounded-sm outline-none focus:ring-1 focus:ring-gold text-lg font-cinzel text-gold"
                      />
                    </div>
@@ -677,7 +774,10 @@ Regras:
                      <label className="text-xs uppercase tracking-widest text-gold/60 font-bold">Mestre da Mesa</label>
                      <input 
                        value={chronicle.master_name}
-                       onChange={(e) => setChronicle({...chronicle, master_name: e.target.value})}
+                       onChange={(e) => {
+                         setChronicle({...chronicle, master_name: e.target.value});
+                         setIsDirty({ ...isDirty, aventura: true });
+                       }}
                        className="w-full bg-neutral-800/50 border border-neutral-700 p-4 rounded-sm outline-none focus:ring-1 focus:ring-gold"
                      />
                    </div>
@@ -685,7 +785,10 @@ Regras:
                      <label className="text-xs uppercase tracking-widest text-gold/60 font-bold">Sistema de RPG</label>
                      <select 
                        value={chronicle.system_id || ''}
-                       onChange={(e) => setChronicle({...chronicle, system_id: e.target.value})}
+                       onChange={(e) => {
+                         setChronicle({...chronicle, system_id: e.target.value});
+                         setIsDirty({ ...isDirty, aventura: true });
+                       }}
                        className="w-full bg-neutral-800/50 border border-neutral-700 p-4 rounded-sm outline-none focus:ring-1 focus:ring-gold text-white appearance-none cursor-pointer"
                      >
                        <option value="">Selecione um sistema</option>
@@ -698,7 +801,10 @@ Regras:
                        <span className="text-neutral-500 text-sm font-mono tracking-tighter">andreric.com/rpg/</span>
                        <input 
                           value={chronicle.slug}
-                          onChange={(e) => setChronicle({...chronicle, slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-')})}
+                          onChange={(e) => {
+                            setChronicle({...chronicle, slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-')});
+                            setIsDirty({ ...isDirty, aventura: true });
+                          }}
                           className="bg-transparent border-none outline-none flex-1 font-bold text-gold placeholder:text-neutral-700"
                           placeholder="meu-rpg-fantastico"
                        />
@@ -707,9 +813,12 @@ Regras:
                    </div>
                 </div>
               </div>
+            </div>
           </div>
         )}
       </div>
+    </main>
+  </div>
 
       {/* AI Prompt Modal */}
       <AnimatePresence>
