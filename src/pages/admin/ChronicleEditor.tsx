@@ -11,6 +11,21 @@ import {
 } from 'lucide-react';
 import { getStorageUrl, STORAGE_BUCKET } from '../../lib/supabase';
 
+// Helper to sanitize filenames for Supabase Storage
+const slugify = (text: string) => {
+  return text
+    .toString()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, '_')
+    .replace(/[^\w-]+/g, '')
+    .replace(/--+/g, '-')
+    .replace(/^-+/, '')
+    .replace(/-+$/, '');
+};
+
 export default function ChronicleEditor() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -523,7 +538,7 @@ Regras:
                               <input type="file" className="hidden" accept="image/*" onChange={async (e) => {
                                 const file = e.target.files?.[0];
                                 if (!file) return;
-                                const fileName = `pic_plr_${(p.char_name || 'unknown').toLowerCase().replace(/\s/g, '_')}_face.jpg`;
+                                const fileName = `pic_plr_${slugify(p.char_name || 'unknown')}_face.jpg`;
                                 const path = await handleFileUpload(file, fileName, p.face_url);
                                 updatePlayer(p.id, { face_url: path });
                               }}/>
@@ -572,7 +587,7 @@ Regras:
                                    <input type="file" className="hidden" accept="image/*" onChange={async (e) => {
                                      const file = e.target.files?.[0];
                                      if (!file) return;
-                                     const fileName = `pic_plr_${(p.char_name || 'unknown').toLowerCase().replace(/\s/g, '_')}_body.jpg`;
+                                     const fileName = `pic_plr_${slugify(p.char_name || 'unknown')}_body.jpg`;
                                      const path = await handleFileUpload(file, fileName, p.body_url);
                                      updatePlayer(p.id, { body_url: path });
                                    }}/>
