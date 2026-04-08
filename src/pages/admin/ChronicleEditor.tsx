@@ -324,7 +324,7 @@ Regras:
   if (loading || !chronicle) return <div className="flex justify-center p-20"><Loader2 className="animate-spin text-gold" size={48} /></div>;
 
   return (
-    <div className="min-h-screen bg-neutral-900 text-white font-sans flex flex-col">
+    <div className="h-screen bg-neutral-900 text-white font-sans flex flex-col overflow-hidden">
       <header className="bg-ink border-b border-gold/20 p-4 sticky top-0 z-50 flex items-center justify-between shadow-xl">
         <div className="flex items-center gap-4">
           <button onClick={() => navigate('/admin/dashboard')} className="hover:text-gold transition-colors p-2"><ArrowLeft /></button>
@@ -370,7 +370,7 @@ Regras:
           <div className="max-w-5xl mx-auto">
             {activeTab === 'sessions' && (
               <div className="space-y-12 pb-20">
-                <div className="sticky top-0 z-20 bg-neutral-900/95 backdrop-blur-md p-6 border-b border-gold/10 flex justify-between items-center shadow-xl">
+                <div className="sticky top-0 z-40 bg-neutral-900/95 backdrop-blur-md p-6 border-b border-gold/10 flex justify-between items-center shadow-xl">
                   <div>
                     <h2 className="text-xl font-cinzel text-gold uppercase tracking-tighter">Estrutura das Crônicas</h2>
                     <p className="text-sm text-neutral-500 italic">Organize suas sessões e capítulos narrativos</p>
@@ -540,7 +540,7 @@ Regras:
 
             {activeTab === 'players' && (
               <div className="space-y-10 pb-20">
-                <div className="sticky top-0 z-20 bg-neutral-900/95 backdrop-blur-md p-6 border-b border-gold/10 flex justify-between items-center shadow-xl">
+                <div className="sticky top-0 z-40 bg-neutral-900/95 backdrop-blur-md p-6 border-b border-gold/10 flex justify-between items-center shadow-xl">
                   <div>
                     <h2 className="text-xl font-cinzel text-gold uppercase tracking-tighter">O Grupo de Aventureiros</h2>
                     <p className="text-sm text-neutral-500 italic">Gerencie os personagens que fazem parte desta jornada</p>
@@ -731,7 +731,7 @@ Regras:
 
             {activeTab === 'aventura' && (
               <div className="space-y-8 pb-20">
-                <div className="sticky top-0 z-20 bg-neutral-900/95 backdrop-blur-md p-6 border-b border-gold/10 flex justify-between items-center shadow-xl">
+                <div className="sticky top-0 z-40 bg-neutral-900/95 backdrop-blur-md p-6 border-b border-gold/10 flex justify-between items-center shadow-xl">
                   <div>
                     <h2 className="text-xl font-cinzel text-gold uppercase tracking-tighter">Metadados da Crônica</h2>
                     <p className="text-sm text-neutral-500 italic">Configurações globais e link de acesso</p>
