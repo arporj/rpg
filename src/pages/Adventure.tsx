@@ -126,20 +126,24 @@ export default function Adventure() {
         <header className="h-20 bg-ink/90 backdrop-blur-md border-b border-gold/10 flex items-center justify-between px-8 z-30 sticky top-0 shadow-lg">
           <div className="flex items-center gap-4">
              <span className="text-[10px] uppercase tracking-[0.3em] text-gold/40 font-bold">O Grupo</span>
-             <div className="flex -space-x-3">
+             <div className="flex flex-wrap gap-4">
               {players.map((player) => (
                 <motion.div 
                   key={player.id}
-                  whileHover={{ scale: 1.1, zIndex: 10, y: -2 }}
+                  whileHover={{ scale: 1.1, y: -2 }}
                   onClick={() => setSelectedPlayer(player)}
-                  className="w-10 h-10 rounded-full border-2 border-gold/30 overflow-hidden bg-neutral-900 cursor-pointer shadow-xl transition-all"
-                  title={player.char_name}
+                  className="flex flex-col items-center gap-1 group cursor-pointer"
                 >
-                  <img 
-                    src={getStorageUrl(player.face_url)} 
-                    alt={player.char_name}
-                    className="w-full h-full object-cover"
-                  />
+                  <div className="w-10 h-10 rounded-full border-2 border-gold/30 overflow-hidden bg-neutral-900 shadow-xl transition-all group-hover:border-gold">
+                    <img 
+                      src={getStorageUrl(player.face_url)} 
+                      alt={player.char_name}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <span className="text-[8px] uppercase tracking-tighter text-gold/60 font-bold group-hover:text-gold transition-colors">
+                    {player.char_name.split(' ')[0]}
+                  </span>
                 </motion.div>
               ))}
             </div>
