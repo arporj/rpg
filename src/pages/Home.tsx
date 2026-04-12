@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase';
 import { Chronicle } from '../types';
 import { Book, ChevronRight, Loader2, Sparkles } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { SubscribeBox } from '../components/SubscribeBox';
 
 export default function Home() {
   const [chronicles, setChronicles] = useState<Chronicle[]>([]);
@@ -56,6 +57,8 @@ export default function Home() {
 
       {/* Chronicle List */}
       <main className="max-w-5xl mx-auto px-8 py-24">
+        <SubscribeBox className="mb-16" />
+
         <h2 className="font-cinzel text-3xl text-gold mb-12 tracking-widest text-center uppercase border-b border-gold/10 pb-4">
           Aventuras Disponíveis
         </h2>

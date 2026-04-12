@@ -4,6 +4,7 @@ import { supabase, getStorageUrl } from '../lib/supabase';
 import { Chronicle, Session, Player } from '../types';
 import { Loader2, Scroll, Ghost, Skull, Sword, Users, Info, X, CheckCircle2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { SubscribeBox } from '../components/SubscribeBox';
 
 export default function Adventure() {
   const { slug } = useParams<{ slug: string }>();
@@ -236,6 +237,10 @@ export default function Adventure() {
                     </div>
                   </article>
                 ))}
+
+                <div className="pt-12 border-t border-gold/10">
+                   <SubscribeBox chronicleId={chronicle.id} />
+                </div>
               </div>
             </motion.div>
           ) : (
