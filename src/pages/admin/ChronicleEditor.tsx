@@ -48,6 +48,7 @@ export default function ChronicleEditor() {
   const [errorAI, setErrorAI] = useState<string | null>(null);
   const [editingSession, setEditingSession] = useState<Session | null>(null);
   const [editingChapter, setEditingChapter] = useState<{sessionId: string; chapter: Chapter} | null>(null);
+  const [expandedSessions, setExpandedSessions] = useState<string[]>([]);
 
   useEffect(() => {
     if (id) fetchData();
@@ -171,6 +172,14 @@ Regras:
       await supabase.from('sessions').update({ is_published: newStatus }).eq('id', session.id);
       setSessions(sessions.map(s => s.id === session.id ? { ...s, is_published: newStatus } : s));
     }
+  };
+
+  const toggleSession = (sessionId: string) => {
+    setExpandedSessions(prev => 
+      prev.includes(sessionId) 
+        ? prev.filter(id => id !== sessionId) 
+        : [...prev, sessionId]
+    );
   };
 
   // --- Section Saves ---
@@ -426,18 +435,29 @@ Regras:
                     </div>
                   )}
 
-                  {sessions.map((session) => (
+                  {[...sessions].sort((a, b) => b.order_index - a.order_index).map((session) => (
                     <div key={session.id} className="bg-ink/60 border border-gold/10 rounded-sm overflow-hidden shadow-2xl">
                       {/* Session Header */}
-                      <div className="bg-ink p-4 border-b border-gold/10 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                        <div className="flex flex-col">
-                          <h4 className="text-gold font-cinzel text-xl flex items-center gap-2">
-                             {session.title}
-                             {session.is_published && <span className="bg-green-500/20 text-green-400 text-[10px] px-2 py-0.5 rounded font-bold uppercase tracking-widest border border-green-500/20">Publicado</span>}
-                          </h4>
-                          <span className="text-neutral-500 text-sm italic">{session.date_str} {session.session_date ? `— ${new Date(session.session_date).toLocaleDateString('pt-BR', {timeZone: 'UTC'})}` : ''}</span>
+                      <div 
+                        className="bg-ink p-4 border-b border-gold/10 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 cursor-pointer hover:bg-neutral-900 transition-colors"
+                        onClick={(e) => {
+                          if ((e.target as HTMLElement).closest('button')) return;
+                          toggleSession(session.id);
+                        }}
+                      >
+                        <div className="flex items-center gap-3">
+                          <button className="text-gold/60 p-1 hover:text-gold transition-colors">
+                            {expandedSessions.includes(session.id) ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+                          </button>
+                          <div className="flex flex-col">
+                            <h4 className="text-gold font-cinzel text-xl flex items-center gap-2">
+                               {session.title}
+                               {session.is_published && <span className="bg-green-500/20 text-green-400 text-[10px] px-2 py-0.5 rounded font-bold uppercase tracking-widest border border-green-500/20">Publicado</span>}
+                            </h4>
+                            <span className="text-neutral-500 text-sm italic">{session.date_str} {session.session_date ? `— ${new Date(session.session_date).toLocaleDateString('pt-BR', {timeZone: 'UTC'})}` : ''}</span>
+                          </div>
                         </div>
-                        <div className="flex gap-2 flex-wrap">
+                        <div className="flex gap-2 flex-wrap ml-11 md:ml-0">
                            <button onClick={() => togglePublish(session)} className={`px-4 py-2 rounded-sm text-xs uppercase font-bold border transition-colors ${session.is_published ? 'bg-neutral-800 border-neutral-700 text-neutral-400 hover:text-white' : 'bg-green-600/20 text-green-500 border-green-600/30 hover:bg-green-600/30'}`}>
                              {session.is_published ? 'Despublicar' : 'Publicar'}
                            </button>
@@ -449,32 +469,43 @@ Regras:
                       </div>
 
                       {/* Chapters Accordion / List */}
-                      <div className="p-4 bg-black/20">
-                         <div className="flex justify-between items-center mb-4">
-                           <h5 className="font-bold text-[10px] text-gold/40 uppercase tracking-widest">Capítulos ({session.chapters?.length || 0})</h5>
-                           <button onClick={() => addChapter(session.id)} className="text-[10px] bg-gold/10 hover:bg-gold/20 text-gold px-3 py-1 rounded-sm border border-gold/20 transition-all font-bold flex items-center gap-1">
-                             <Plus size={12}/> CAPÍTULO
-                           </button>
-                         </div>
-                         <div className="space-y-2">
-                           {session.chapters?.map(chapter => (
-                             <div key={chapter.id} className="flex justify-between items-center bg-neutral-900/50 p-3 rounded border border-neutral-800 hover:border-gold/20 transition-colors">
-                               <div className="flex items-center gap-3">
-                                  <div className="flex flex-col gap-1 items-center bg-ink p-1 rounded">
-                                    <button onClick={() => moveChapter(session.id, chapter.id, 'up')} className="text-neutral-600 hover:text-gold"><ChevronUp size={14}/></button>
-                                    <button onClick={() => moveChapter(session.id, chapter.id, 'down')} className="text-neutral-600 hover:text-gold"><ChevronDown size={14}/></button>
-                                  </div>
-                                  <span className="text-parchment font-cinzel">{chapter.title}</span>
-                                  {chapter.image_url && <ImageIcon size={14} className="text-gold/40"/>}
+                      <AnimatePresence>
+                        {expandedSessions.includes(session.id) && (
+                          <motion.div 
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: "auto", opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            className="overflow-hidden bg-black/20"
+                          >
+                            <div className="p-4">
+                               <div className="flex justify-between items-center mb-4">
+                                 <h5 className="font-bold text-[10px] text-gold/40 uppercase tracking-widest">Capítulos ({session.chapters?.length || 0})</h5>
+                                 <button onClick={() => addChapter(session.id)} className="text-[10px] bg-gold/10 hover:bg-gold/20 text-gold px-3 py-1 rounded-sm border border-gold/20 transition-all font-bold flex items-center gap-1">
+                                   <Plus size={12}/> CAPÍTULO
+                                 </button>
                                </div>
-                               <div className="flex gap-2">
-                                  <button onClick={() => setEditingChapter({chapter, sessionId: session.id})} className="text-xs text-gold/60 hover:text-gold uppercase font-bold px-3 py-1 bg-gold/5 rounded">Editar</button>
-                                  <button onClick={() => deleteChapter(session.id, chapter.id)} className="text-red-900 hover:text-red-500 p-1"><Trash2 size={14}/></button>
+                               <div className="space-y-2">
+                                 {session.chapters?.sort((a: Chapter, b: Chapter) => a.order_index - b.order_index).map(chapter => (
+                                   <div key={chapter.id} className="flex justify-between items-center bg-neutral-900/50 p-3 rounded border border-neutral-800 hover:border-gold/20 transition-colors">
+                                     <div className="flex items-center gap-3">
+                                        <div className="flex flex-col gap-1 items-center bg-ink p-1 rounded">
+                                          <button onClick={() => moveChapter(session.id, chapter.id, 'up')} className="text-neutral-600 hover:text-gold"><ChevronUp size={14}/></button>
+                                          <button onClick={() => moveChapter(session.id, chapter.id, 'down')} className="text-neutral-600 hover:text-gold"><ChevronDown size={14}/></button>
+                                        </div>
+                                        <span className="text-parchment font-cinzel">{chapter.title}</span>
+                                        {chapter.image_url && <ImageIcon size={14} className="text-gold/40"/>}
+                                     </div>
+                                     <div className="flex gap-2">
+                                        <button onClick={() => setEditingChapter({chapter, sessionId: session.id})} className="text-xs text-gold/60 hover:text-gold uppercase font-bold px-3 py-1 bg-gold/5 rounded">Editar</button>
+                                        <button onClick={() => deleteChapter(session.id, chapter.id)} className="text-red-900 hover:text-red-500 p-1"><Trash2 size={14}/></button>
+                                     </div>
+                                   </div>
+                                 ))}
                                </div>
-                             </div>
-                           ))}
-                         </div>
-                      </div>
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
                     </div>
                   ))}
                 </div>
