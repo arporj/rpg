@@ -50,13 +50,22 @@ export default function Dashboard() {
           <BookOpen className="w-8 h-8 text-gold" />
           <h1 className="text-2xl font-cinzel tracking-widest uppercase">Tomo Administrativo</h1>
         </div>
-        <button 
-          onClick={handleLogout}
-          className="flex items-center gap-2 text-neutral-400 hover:text-white transition-colors"
-        >
-          <LogOut className="w-5 h-5" />
-          Sair
-        </button>
+        <div className="flex items-center gap-6">
+          <button 
+            onClick={() => navigate('/admin/newsletter')}
+            className="flex items-center gap-2 text-gold/60 hover:text-gold transition-colors font-bold uppercase text-xs tracking-widest"
+          >
+            <Mail className="w-4 h-4" />
+            Newsletter
+          </button>
+          <button 
+            onClick={handleLogout}
+            className="flex items-center gap-2 text-neutral-400 hover:text-white transition-colors text-xs uppercase font-bold tracking-widest"
+          >
+            <LogOut className="w-4 h-4" />
+            Sair
+          </button>
+        </div>
       </header>
 
       <main className="max-w-6xl mx-auto p-8">
@@ -65,14 +74,7 @@ export default function Dashboard() {
             <h2 className="text-3xl font-cinzel mb-2">Suas Crônicas</h2>
             <p className="text-neutral-400 italic">Gerencie suas aventuras e sessões</p>
           </div>
-           <div className="flex gap-4">
-            <button 
-              onClick={() => navigate('/admin/newsletter')}
-              className="px-6 py-2 border border-gold/30 text-gold rounded-full font-bold hover:bg-gold/10 transition-all flex items-center gap-2"
-            >
-              <Mail className="w-5 h-5" />
-              Newsletter
-            </button>
+          <div className="flex gap-4">
             <button 
               className="bg-gold text-ink font-bold px-6 py-3 rounded-full flex items-center gap-2 hover:bg-yellow-500 transition-all shadow-lg hover:scale-105"
             >
