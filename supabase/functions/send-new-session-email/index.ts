@@ -23,28 +23,29 @@ serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Get the exact chapter payload injected by the database webhook
+    // Get the exact payload injected by the database webhook
     const payload = await req.json();
     
-    // We expect a database webhook payload structure for INSERT
-    if (payload.type !== "INSERT" || payload.table !== "chapters") {
-      return new Response(JSON.stringify({ message: "Ignored non-insert or non-chapter event" }), {
+    // We expect an UPDATE payload for the sessions table where is_published turns true
+    if (payload.type !== "UPDATE" || payload.table !== "sessions") {
+      return new Response(JSON.stringify({ message: "Ignored non-update or non-session event" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 200,
       });
     }
 
-    const newChapter = payload.record;
+    const session = payload.record;
+    const oldSession = payload.old_record || {};
 
-    // 1. Fetch Session and Chronicle data for context
-    const { data: session } = await supabase
-      .from('sessions')
-      .select('title, chronicle_id')
-      .eq('id', newChapter.session_id)
-      .single();
+    // ONLY SEND if it was unpublished and now is published
+    if (!session.is_published || oldSession.is_published === true) {
+      return new Response(JSON.stringify({ message: "Session is not newly published. Ignoring." }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      });
+    }
 
-    if (!session) throw new Error("Session not found for chapter");
-
+    // 1. Fetch Chronicle data for context
     const { data: chronicle } = await supabase
       .from('chronicles')
       .select('title, slug')
@@ -54,8 +55,6 @@ serve(async (req) => {
     if (!chronicle) throw new Error("Chronicle not found");
 
     // 2. Fetch all appropriate subscribers
-    // Subscriber logic: Those who subscribed_all OR are in newsletter_chronicle_subscriptions for this chronicle
-    
     const { data: subAll } = await supabase
       .from('newsletter_subscribers')
       .select('email')
@@ -85,10 +84,10 @@ serve(async (req) => {
       });
     }
 
-    const chapterLink = `http://rpg.andreric.com/codex/${chronicle.slug}`;
+    // Direct route to the session
+    const sessionLink = `http://rpg.andreric.com/codex/${chronicle.slug}/sessao/${session.id}`;
     const adventureTitle = chronicle.title;
     const sessionTitle = session.title;
-    const chapterTitle = newChapter.title;
 
     // 3. Send email via Brevo
     if (!BREVO_API_KEY) {
@@ -105,12 +104,11 @@ serve(async (req) => {
         </div>
         
         <p style="font-size: 18px; line-height: 1.6;">Saudações Aventureiro,</p>
-        <p style="font-size: 18px; line-height: 1.6;">Uma nova passagem foi transcrita nas páginas do códice. A história <strong>${adventureTitle}</strong> avança com um novo capítulo em <em>${sessionTitle}</em>.</p>
+        <p style="font-size: 18px; line-height: 1.6;">Uma nova sessão inteira foi publicada nas páginas do códice. A história <strong>${adventureTitle}</strong> revela agora os mistérios de <em>${sessionTitle}</em>.</p>
         
         <div style="text-align: center; margin: 40px 0;">
-          <h2 style="color: #d4af37; margin-bottom: 10px;">${chapterTitle}</h2>
-          <a href="${chapterLink}" style="display: inline-block; padding: 12px 24px; background-color: rgba(212, 175, 55, 0.1); border: 1px solid #d4af37; color: #d4af37; text-decoration: none; text-transform: uppercase; letter-spacing: 2px; font-size: 14px; font-weight: bold;">
-            Ler Novo Capítulo
+          <a href="${sessionLink}" style="display: inline-block; padding: 12px 24px; background-color: rgba(212, 175, 55, 0.1); border: 1px solid #d4af37; color: #d4af37; text-decoration: none; text-transform: uppercase; letter-spacing: 2px; font-size: 14px; font-weight: bold;">
+            Ler Nova Sessão
           </a>
         </div>
         
@@ -123,9 +121,9 @@ serve(async (req) => {
     `;
 
     const brevoPayload = {
-      sender: { name: "O Tomo das Aventuras", email: "noreply@andreric.com" },
+      sender: { name: "O Tomo das Aventuras", email: "tomo@arrcsistemas.com.br" },
       bcc: bccList,
-      subject: `Novo Capítulo Escrito: ${adventureTitle} - ${chapterTitle}`,
+      subject: `Nova Sessão Publicada: ${adventureTitle} - ${sessionTitle}`,
       htmlContent: htmlContent,
     };
 

@@ -4,6 +4,8 @@ import { GoogleGenAI } from '@google/genai';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { Chronicle, Session, Player, RPGSystem, Chapter } from '../../types';
+import { SessionModal } from './components/SessionModal';
+import { ChapterModal } from './components/ChapterModal';
 import { 
   ArrowLeft, Save, Plus, Trash2, ChevronUp, ChevronDown, 
   Users, Book, MessageSquare, Image as ImageIcon, Loader2,
@@ -44,6 +46,8 @@ export default function ChronicleEditor() {
   const [isGeneratingPrompt, setIsGeneratingPrompt] = useState(false);
   const [copySuccess, setCopySuccess] = useState(false);
   const [errorAI, setErrorAI] = useState<string | null>(null);
+  const [editingSession, setEditingSession] = useState<Session | null>(null);
+  const [editingChapter, setEditingChapter] = useState<{sessionId: string; chapter: Chapter} | null>(null);
 
   useEffect(() => {
     if (id) fetchData();
@@ -148,6 +152,14 @@ Regras:
     setTimeout(() => setCopySuccess(false), 2000);
   };
 
+  const togglePublish = async (session: Session) => {
+    const newStatus = !session.is_published;
+    if (confirm(newStatus ? 'Publicar esta sessão para todos?' : 'Remover publicação (Torna invisível)?')) {
+      await supabase.from('sessions').update({ is_published: newStatus }).eq('id', session.id);
+      setSessions(sessions.map(s => s.id === session.id ? { ...s, is_published: newStatus } : s));
+    }
+  };
+
   // --- Section Saves ---
   const handleTabChange = (newTab: 'sessions' | 'players' | 'aventura') => {
     const hasChanges = isDirty.sessions || isDirty.players || isDirty.aventura;
@@ -247,7 +259,10 @@ Regras:
       date_str: 'Dia X',
       order_index: sessions.length
     }).select().single();
-    if (data) setSessions([...sessions, { ...data, chapters: [] }]);
+    if (data) {
+      setSessions([...sessions, { ...data, chapters: [] }]);
+      setEditingSession({ ...data, chapters: [] });
+    }
   };
 
   const deleteSession = async (sessionId: string) => {
@@ -271,6 +286,7 @@ Regras:
     
     if (data) {
       setSessions(sessions.map(s => s.id === sessionId ? { ...s, chapters: [...(s.chapters || []), data].sort((a: Chapter, b: Chapter) => a.order_index - b.order_index) } : s));
+      setEditingChapter({ chapter: data, sessionId });
     }
   };
 
@@ -390,7 +406,7 @@ Regras:
                   </div>
                 </div>
 
-                <div className="p-4 md:p-10 space-y-8 md:space-y-12">
+                <div className="p-4 md:p-10 space-y-6 md:space-y-8">
                   {sessions.length === 0 && (
                     <div className="text-center py-20 border-2 border-dashed border-neutral-800 rounded">
                       <p className="text-neutral-500 font-cinzel">Nenhuma sessão registrada. Comece criando uma!</p>
@@ -399,138 +415,52 @@ Regras:
 
                   {sessions.map((session) => (
                     <div key={session.id} className="bg-ink/60 border border-gold/10 rounded-sm overflow-hidden shadow-2xl">
+                      {/* Session Header */}
                       <div className="bg-ink p-4 border-b border-gold/10 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                        <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 items-start sm:items-center flex-1 w-full">
-                          <div className="flex flex-col">
-                            <label className="text-[10px] text-gold/40 font-bold uppercase mb-1">Título da Sessão</label>
-                            <input 
-                              value={session.title} 
-                              onChange={(e) => {
-                                const newTitle = e.target.value;
-                                setSessions(sessions.map(s => s.id === session.id ? { ...s, title: newTitle } : s));
-                                setIsDirty({ ...isDirty, sessions: true });
-                              }}
-                              placeholder="Ex: O Despertar da Churrasqueira"
-                              className="bg-transparent border-b border-transparent focus:border-gold outline-none text-gold font-cinzel text-lg w-full"
-                            />
-                          </div>
-                          <div className="flex flex-col">
-                            <label className="text-[10px] text-gold/40 font-bold uppercase mb-1">Data/Identificador</label>
-                            <input 
-                              value={session.date_str} 
-                              onChange={(e) => {
-                                const newDate = e.target.value;
-                                setSessions(sessions.map(s => s.id === session.id ? { ...s, date_str: newDate } : s));
-                                setIsDirty({ ...isDirty, sessions: true });
-                              }}
-                              placeholder="Ex: Dia 1"
-                              className="bg-transparent border-b border-transparent focus:border-gold outline-none text-neutral-400 text-sm italic"
-                            />
-                          </div>
+                        <div className="flex flex-col">
+                          <h4 className="text-gold font-cinzel text-xl flex items-center gap-2">
+                             {session.title}
+                             {session.is_published && <span className="bg-green-500/20 text-green-400 text-[10px] px-2 py-0.5 rounded font-bold uppercase tracking-widest border border-green-500/20">Publicado</span>}
+                          </h4>
+                          <span className="text-neutral-500 text-sm italic">{session.date_str} {session.session_date ? `— ${new Date(session.session_date).toLocaleDateString('pt-BR', {timeZone: 'UTC'})}` : ''}</span>
                         </div>
-                        <div className="flex gap-4">
-                          <button onClick={() => addChapter(session.id)} className="text-xs bg-gold/10 hover:bg-gold/20 text-gold px-4 py-2 rounded-sm border border-gold/20 transition-all font-bold">
-                            + CAPÍTULO
-                          </button>
-                          <button onClick={() => deleteSession(session.id)} className="p-2 text-red-900 hover:text-red-500 transition-colors">
-                            <Trash2 size={18} />
-                          </button>
+                        <div className="flex gap-2 flex-wrap">
+                           <button onClick={() => togglePublish(session)} className={`px-4 py-2 rounded-sm text-xs uppercase font-bold border transition-colors ${session.is_published ? 'bg-neutral-800 border-neutral-700 text-neutral-400 hover:text-white' : 'bg-green-600/20 text-green-500 border-green-600/30 hover:bg-green-600/30'}`}>
+                             {session.is_published ? 'Despublicar' : 'Publicar'}
+                           </button>
+                           <button onClick={() => setEditingSession(session)} className="px-4 py-2 bg-neutral-800 hover:bg-neutral-700 text-white rounded-sm text-xs font-bold uppercase transition-colors">Editar</button>
+                           <button onClick={() => deleteSession(session.id)} className="p-2 text-red-900 hover:text-red-500 transition-colors bg-red-900/10 rounded-sm">
+                             <Trash2 size={16} />
+                           </button>
                         </div>
                       </div>
 
-                      <div className="p-4 md:p-6 space-y-6 bg-black/20">
-                        {session.chapters?.length === 0 && <p className="text-center text-neutral-600 italic text-sm py-4">Sessão vazia</p>}
-                        {session.chapters?.map((chapter) => (
-                          <div key={chapter.id} className="bg-neutral-800/40 p-3 md:p-5 rounded-sm border border-neutral-700/50 group hover:border-gold/20 transition-all">
-                            <div className="flex flex-col md:flex-row gap-4 md:gap-6 items-start">
-                              <div className="flex flex-row md:flex-col gap-2 pt-0 md:pt-2 w-full md:w-auto justify-end md:justify-start">
-                                <button onClick={() => moveChapter(session.id, chapter.id, 'up')} className="p-1 hover:text-gold text-neutral-600 transition-colors"><ChevronUp size={20}/></button>
-                                <button onClick={() => moveChapter(session.id, chapter.id, 'down')} className="p-1 hover:text-gold text-neutral-600 transition-colors"><ChevronDown size={20}/></button>
-                              </div>
-                              <div className="flex-1 space-y-6">
-                                <div>
-                                  <label className="text-[10px] text-gold/60 font-bold uppercase tracking-widest block mb-2">Título do Capítulo</label>
-                                  <input 
-                                    value={chapter.title}
-                                    placeholder="Nome do Capítulo"
-                                    onChange={(e) => {
-                                      const newTitle = e.target.value;
-                                      setSessions(sessions.map(s => s.id === session.id ? { ...s, chapters: s.chapters?.map(c => c.id === chapter.id ? { ...c, title: newTitle } : c) } : s));
-                                      setIsDirty({ ...isDirty, sessions: true });
-                                    }}
-                                    className="w-full bg-transparent text-parchment font-cinzel text-xl border-b border-neutral-700 focus:border-gold outline-none pb-2 transition-all"
-                                  />
-                                </div>
-
-                                <div className="space-y-3">
-                                  <label className="text-[10px] text-gold/60 font-bold uppercase tracking-widest block">Ilustração do Capítulo</label>
-                                  <div className="aspect-video w-full bg-neutral-900 rounded border border-neutral-700 flex items-center justify-center overflow-hidden relative group/img shadow-2xl">
-                                    {chapter.image_url ? (
-                                      <img 
-                                        src={`${getStorageUrl(chapter.image_url)}?t=${Date.now()}`} 
-                                        key={chapter.image_url}
-                                        className="w-full h-full object-cover opacity-80 group-hover/img:opacity-100 transition-opacity" 
-                                      />
-                                    ) : (
-                                      <div className="flex flex-col items-center gap-2 opacity-20">
-                                        <ImageIcon size={48} />
-                                        <span className="text-[10px] uppercase font-bold tracking-tighter">Sem Imagem</span>
-                                      </div>
-                                    )}
-                                    <label className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center opacity-0 group-hover/img:opacity-100 transition-opacity cursor-pointer backdrop-blur-[2px]">
-                                      <input 
-                                        type="file" 
-                                        accept="image/*"
-                                        className="hidden" 
-                                        onChange={async (e) => {
-                                          const file = e.target.files?.[0];
-                                          if (!file) return;
-                                          const fileName = `pic_chr${chronicle.id.slice(0,4)}_cap${chapter.id.slice(0,4)}.jpg`;
-                                          const path = await handleFileUpload(file, fileName, chapter.image_url);
-                                          setSessions(sessions.map(s => s.id === session.id ? { ...s, chapters: s.chapters?.map(c => c.id === chapter.id ? { ...c, image_url: path } : c) } : s));
-                                          setIsDirty({ ...isDirty, sessions: true });
-                                        }}
-                                      />
-                                      <Upload className="text-gold mb-2" size={32} />
-                                      <span className="text-xs font-bold text-white uppercase tracking-widest">Fazer Upload Ilustração</span>
-                                      <p className="text-[10px] text-gold/60 mt-1">AR 16:9 (1920x1080px)</p>
-                                    </label>
+                      {/* Chapters Accordion / List */}
+                      <div className="p-4 bg-black/20">
+                         <div className="flex justify-between items-center mb-4">
+                           <h5 className="font-bold text-[10px] text-gold/40 uppercase tracking-widest">Capítulos ({session.chapters?.length || 0})</h5>
+                           <button onClick={() => addChapter(session.id)} className="text-[10px] bg-gold/10 hover:bg-gold/20 text-gold px-3 py-1 rounded-sm border border-gold/20 transition-all font-bold flex items-center gap-1">
+                             <Plus size={12}/> CAPÍTULO
+                           </button>
+                         </div>
+                         <div className="space-y-2">
+                           {session.chapters?.map(chapter => (
+                             <div key={chapter.id} className="flex justify-between items-center bg-neutral-900/50 p-3 rounded border border-neutral-800 hover:border-gold/20 transition-colors">
+                               <div className="flex items-center gap-3">
+                                  <div className="flex flex-col gap-1 items-center bg-ink p-1 rounded">
+                                    <button onClick={() => moveChapter(session.id, chapter.id, 'up')} className="text-neutral-600 hover:text-gold"><ChevronUp size={14}/></button>
+                                    <button onClick={() => moveChapter(session.id, chapter.id, 'down')} className="text-neutral-600 hover:text-gold"><ChevronDown size={14}/></button>
                                   </div>
-                                </div>
-
-                                <div className="space-y-2">
-                                  <div className="flex justify-between items-center mb-2">
-                                    <label className="text-[10px] text-gold/60 font-bold uppercase tracking-widest block">Narrativa do Capítulo</label>
-                                    <button 
-                                      onClick={() => handleGeneratePrompt(chapter)}
-                                      title="Gerar Prompt sugerido para IA"
-                                      className="flex items-center gap-1 text-[9px] uppercase font-bold text-gold/40 hover:text-gold transition-colors bg-gold/5 px-2 py-1 rounded-sm border border-gold/10"
-                                    >
-                                      <Wand2 size={12} /> Prompt IA Mágico
-                                    </button>
-                                  </div>
-                                  <textarea 
-                                    value={chapter.content}
-                                    placeholder="Conte a história aqui..."
-                                    rows={10}
-                                    onChange={(e) => {
-                                      const newVal = e.target.value;
-                                      setSessions(sessions.map(s => s.id === session.id ? { ...s, chapters: s.chapters?.map(c => c.id === chapter.id ? { ...c, content: newVal } : c) } : s));
-                                      setIsDirty({ ...isDirty, sessions: true });
-                                    }}
-                                    className="w-full bg-ink/30 border border-neutral-700/50 p-6 rounded text-parchment/90 text-base focus:border-gold outline-none leading-relaxed resize-none font-merriweather shadow-inner min-h-[300px]"
-                                  />
-                                </div>
-                              </div>
-                              <button 
-                                onClick={() => deleteChapter(session.id, chapter.id)}
-                                className="p-2 text-red-900/50 hover:text-red-500 transition-colors"
-                              >
-                                <Trash2 size={20}/>
-                              </button>
-                            </div>
-                          </div>
-                        ))}
+                                  <span className="text-parchment font-cinzel">{chapter.title}</span>
+                                  {chapter.image_url && <ImageIcon size={14} className="text-gold/40"/>}
+                               </div>
+                               <div className="flex gap-2">
+                                  <button onClick={() => setEditingChapter({chapter, sessionId: session.id})} className="text-xs text-gold/60 hover:text-gold uppercase font-bold px-3 py-1 bg-gold/5 rounded">Editar</button>
+                                  <button onClick={() => deleteChapter(session.id, chapter.id)} className="text-red-900 hover:text-red-500 p-1"><Trash2 size={14}/></button>
+                               </div>
+                             </div>
+                           ))}
+                         </div>
                       </div>
                     </div>
                   ))}
@@ -819,8 +749,33 @@ Regras:
         </main>
       </div>
 
-      {/* Modal Prompt IA */}
+      {/* Modals e Prompt IA */}
       <AnimatePresence>
+        {editingSession && (
+          <SessionModal 
+            session={editingSession} 
+            onSave={(updated) => {
+              setSessions(sessions.map(s => s.id === updated.id ? updated : s));
+              setIsDirty({ ...isDirty, sessions: true });
+              setEditingSession(null);
+            }} 
+            onClose={() => setEditingSession(null)} 
+          />
+        )}
+        {editingChapter && (
+           <ChapterModal 
+             chapter={editingChapter.chapter}
+             chronicleId={id || ''}
+             onSave={(updated) => {
+               setSessions(sessions.map(s => s.id === editingChapter.sessionId ? { ...s, chapters: s.chapters?.map(c => c.id === updated.id ? updated : c) } : s));
+               setIsDirty({ ...isDirty, sessions: true });
+               setEditingChapter(null);
+             }}
+             onClose={() => setEditingChapter(null)}
+             onGeneratePrompt={handleGeneratePrompt}
+             onUploadImage={async (file, cap) => await handleFileUpload(file, `pic_chr${id?.slice(0,4)}_cap${cap.id.slice(0,4)}.jpg`, cap.image_url)}
+           />
+        )}
         {showPromptModal && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
             <motion.div 

@@ -13,6 +13,7 @@ function App() {
       {/* Public Routes */}
       <Route path="/" element={<Home />} />
       <Route path="/:slug" element={<Adventure />} />
+      <Route path="/:slug/sessao/:sessionId" element={<Adventure />} />
       
       {/* Admin Routes */}
       <Route path="/admin" element={<Login />} />

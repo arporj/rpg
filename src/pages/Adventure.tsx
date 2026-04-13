@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { SubscribeBox } from '../components/SubscribeBox';
 
 export default function Adventure() {
-  const { slug } = useParams<{ slug: string }>();
+  const { slug, sessionId } = useParams<{ slug: string; sessionId?: string }>();
   const [chronicle, setChronicle] = useState<Chronicle | null>(null);
   const [sessions, setSessions] = useState<Session[]>([]);
   const [players, setPlayers] = useState<Player[]>([]);
@@ -51,11 +51,16 @@ export default function Adventure() {
       .from('sessions')
       .select('*, chapters(*)')
       .eq('chronicle_id', chrData.id)
+      .eq('is_published', true)
       .order('order_index', { ascending: true });
 
     if (sessData) {
       setSessions(sessData);
-      setActiveSession(sessData[0] || null);
+      if (sessionId) {
+        setActiveSession(sessData.find(s => s.id === sessionId) || sessData[0] || null);
+      } else {
+        setActiveSession(sessData[0] || null);
+      }
     }
 
     setLoading(false);
@@ -200,12 +205,19 @@ export default function Adventure() {
                 <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-16 opacity-5 sm:opacity-10">
                    <Scroll className="w-32 h-32 md:w-40 md:h-40 text-gold" />
                 </div>
-                <h2 className="text-3xl md:text-5xl font-cinzel text-gold font-bold tracking-tight uppercase px-2">
+                <h2 className="text-3xl md:text-5xl font-cinzel text-gold font-bold tracking-tight uppercase px-2 text-balance leading-tight">
                   {activeSession.title}
                 </h2>
-                <p className="text-gold/40 font-cinzel tracking-[0.3em] md:tracking-[0.5em] text-xs md:text-sm italic">
-                  — {activeSession.date_str} —
-                </p>
+                <div className="flex flex-col items-center gap-2 mt-4">
+                  <p className="text-gold/60 font-cinzel tracking-[0.3em] md:tracking-[0.5em] text-sm md:text-base italic uppercase">
+                    — {activeSession.date_str} —
+                  </p>
+                  {activeSession.session_date && (
+                    <p className="text-gold/40 font-mono tracking-widest text-xs md:text-sm">
+                      {new Date(activeSession.session_date).toLocaleDateString('pt-BR', {timeZone: 'UTC'})}
+                    </p>
+                  )}
+                </div>
               </div>
 
               <div className="space-y-20 md:space-y-32">

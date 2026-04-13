@@ -32,6 +32,8 @@ export interface Session {
   chronicle_id: string;
   title: string;
   date_str: string;
+  session_date?: string;
+  is_published?: boolean;
   order_index: number;
   chapters?: Chapter[];
 }
