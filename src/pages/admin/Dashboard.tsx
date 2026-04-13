@@ -53,7 +53,7 @@ export default function Dashboard() {
         <div className="flex items-center gap-6">
           <button 
             onClick={() => navigate('/admin/newsletter')}
-            className="flex items-center gap-2 text-gold/60 hover:text-gold transition-colors font-bold uppercase text-xs tracking-widest"
+            className="flex items-center gap-2 text-gold hover:text-yellow-400 transition-colors font-bold uppercase text-xs tracking-widest"
           >
             <Mail className="w-4 h-4" />
             Newsletter
