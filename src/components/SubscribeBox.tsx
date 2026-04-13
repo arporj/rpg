@@ -5,9 +5,10 @@ import { Mail, CheckCircle2, Loader2 } from 'lucide-react';
 interface SubscribeBoxProps {
   chronicleId?: string;
   className?: string;
+  variant?: 'default' | 'sidebar';
 }
 
-export function SubscribeBox({ chronicleId, className = '' }: SubscribeBoxProps) {
+export function SubscribeBox({ chronicleId, className = '', variant = 'default' }: SubscribeBoxProps) {
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState<'idle' | 'success' | 'error'>('idle');
@@ -37,6 +38,56 @@ export function SubscribeBox({ chronicleId, className = '' }: SubscribeBoxProps)
 
     setLoading(false);
   };
+
+  if (variant === 'sidebar') {
+    return (
+      <div className={`space-y-4 ${className}`}>
+        <div className="flex flex-col gap-2">
+          <h3 className="font-cinzel text-xs text-gold uppercase tracking-widest font-bold">
+            Assine a Newsletter
+          </h3>
+          <p className="text-[10px] text-parchment/60 font-serif italic leading-tight">
+            Receba um pergaminho sempre que houver novidades.
+          </p>
+        </div>
+
+        <form onSubmit={handleSubscribe} className="space-y-2">
+          <input
+            type="email"
+            required
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="Seu e-mail"
+            disabled={loading || status === 'success'}
+            className="w-full bg-ink/80 border border-gold/30 text-parchment px-3 py-2 text-xs font-serif outline-none focus:border-gold transition-colors placeholder:text-parchment/30 disabled:opacity-50"
+          />
+          
+          <button
+            type="submit"
+            disabled={loading || status === 'success'}
+            className="w-full flex items-center justify-center gap-2 py-2 bg-gold/10 hover:bg-gold/20 border border-gold/50 text-gold font-cinzel font-bold text-[10px] uppercase tracking-widest transition-all disabled:opacity-50"
+          >
+            {loading ? (
+              <Loader2 className="w-3 h-3 animate-spin" />
+            ) : status === 'success' ? (
+              <CheckCircle2 className="w-3 h-3" />
+            ) : (
+              'Assinar'
+            )}
+          </button>
+        </form>
+
+        {status === 'error' && (
+          <p className="text-red-400 text-[9px] italic">{errorMessage}</p>
+        )}
+        {status === 'success' && (
+          <p className="text-green-400 text-[9px] italic">
+            O corvo foi enviado!
+          </p>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className={`bg-ink/40 border border-gold/20 p-6 md:p-8 rounded-sm shadow-xl relative overflow-hidden group ${className}`}>

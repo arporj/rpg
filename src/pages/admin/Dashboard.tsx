@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { Chronicle, RPGSystem } from '../../types';
-import { Plus, Settings, BookOpen, User, LogOut, Loader2 } from 'lucide-react';
+import { Plus, Settings, BookOpen, User, LogOut, Loader2, Mail } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 export default function Dashboard() {
@@ -65,10 +65,21 @@ export default function Dashboard() {
             <h2 className="text-3xl font-cinzel mb-2">Suas Crônicas</h2>
             <p className="text-neutral-400 italic">Gerencie suas aventuras e sessões</p>
           </div>
-          <button className="bg-gold text-ink font-bold px-6 py-3 rounded-full flex items-center gap-2 hover:bg-yellow-500 transition-all shadow-lg hover:scale-105">
-            <Plus className="w-5 h-5" />
-            Nova Crônica
-          </button>
+           <div className="flex gap-4">
+            <button 
+              onClick={() => navigate('/admin/newsletter')}
+              className="px-6 py-2 border border-gold/30 text-gold rounded-full font-bold hover:bg-gold/10 transition-all flex items-center gap-2"
+            >
+              <Mail className="w-5 h-5" />
+              Newsletter
+            </button>
+            <button 
+              className="bg-gold text-ink font-bold px-6 py-3 rounded-full flex items-center gap-2 hover:bg-yellow-500 transition-all shadow-lg hover:scale-105"
+            >
+              <Plus className="w-5 h-5" />
+              Nova Crônica
+            </button>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">

@@ -21,6 +21,18 @@ export default function Adventure() {
     if (slug) fetchAdventure();
   }, [slug]);
 
+  useEffect(() => {
+    if (sessions.length > 0) {
+      if (sessionNumber) {
+        const idx = parseInt(sessionNumber, 10) - 1;
+        const targetSession = sessions.find(s => s.order_index === idx);
+        setActiveSession(targetSession || sessions[0] || null);
+      } else {
+        setActiveSession(sessions[0] || null);
+      }
+    }
+  }, [sessionNumber, sessions]);
+
   async function fetchAdventure() {
     setLoading(true);
     // 1. Fetch Chronicle
@@ -56,13 +68,6 @@ export default function Adventure() {
 
     if (sessData) {
       setSessions(sessData);
-      if (sessionNumber) {
-        const idx = parseInt(sessionNumber, 10) - 1;
-        const targetSession = sessData.find(s => s.order_index === idx);
-        setActiveSession(targetSession || sessData[0] || null);
-      } else {
-        setActiveSession(sessData[0] || null);
-      }
     }
 
     setLoading(false);
@@ -97,10 +102,13 @@ export default function Adventure() {
           </button>
         </div>
 
-        <div className="px-6 py-2 border-b border-gold/5">
+        <div className="px-6 py-2 border-b border-gold/5 flex flex-col gap-4">
           <p className="text-[10px] uppercase tracking-[0.3em] text-gold/40 font-bold">
             {chronicle.systems?.name}
           </p>
+          <div className="bg-gold/5 p-4 rounded-sm border border-gold/10">
+            <SubscribeBox chronicleId={chronicle.id} variant="sidebar" />
+          </div>
         </div>
 
         <nav className="flex-1 overflow-y-auto p-4 space-y-2 custom-scrollbar">
@@ -251,10 +259,6 @@ export default function Adventure() {
                     </div>
                   </article>
                 ))}
-
-                <div className="pt-12 border-t border-gold/10">
-                   <SubscribeBox chronicleId={chronicle.id} />
-                </div>
               </div>
             </motion.div>
           ) : (
