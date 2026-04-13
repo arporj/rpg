@@ -168,7 +168,7 @@ export default function Adventure() {
                 >
                   <div className="w-8 h-8 md:w-10 md:h-10 rounded-full border-2 border-gold/30 overflow-hidden bg-neutral-900 shadow-xl transition-all group-hover:border-gold shrink-0">
                     <img 
-                      src={getStorageUrl(player.face_url)} 
+                      src={`${getStorageUrl(player.face_url)}?t=${Date.now()}`} 
                       alt={player.char_name}
                       className="w-full h-full object-cover"
                     />
@@ -236,7 +236,7 @@ export default function Adventure() {
                     {chapter.image_url && (
                       <div className="relative rounded-sm overflow-hidden border border-gold/20 shadow-2xl bg-ink/40 group/img">
                         <img 
-                          src={getStorageUrl(chapter.image_url)} 
+                          src={`${getStorageUrl(chapter.image_url)}?t=${Date.now()}`} 
                           alt={chapter.title}
                           className="w-full aspect-video object-cover object-top transition-transform duration-1000 group-hover/img:scale-105"
                         />
@@ -292,10 +292,10 @@ export default function Adventure() {
               {/* Player Body Portrait */}
               <div className="w-full md:w-[40%] bg-ink border-b md:border-b-0 md:border-r border-gold/10 relative overflow-hidden group min-h-[300px] md:min-h-0 shrink-0">
                  {selectedPlayer.body_url ? (
-                   <img 
-                    src={getStorageUrl(selectedPlayer.body_url)} 
-                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" 
-                   />
+                    <img 
+                     src={`${getStorageUrl(selectedPlayer.body_url)}?t=${Date.now()}`} 
+                     className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" 
+                    />
                  ) : (
                     <div className="w-full h-full flex items-center justify-center opacity-10 py-40">
                        <Users size={120} className="text-gold" />
@@ -311,7 +311,7 @@ export default function Adventure() {
                     <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 md:gap-6 mb-4 text-center sm:text-left">
                        <div className="w-20 h-20 rounded-full border-2 border-gold/30 overflow-hidden bg-ink shadow-xl shrink-0">
                           <img 
-                            src={getStorageUrl(selectedPlayer.face_url)} 
+                            src={`${getStorageUrl(selectedPlayer.face_url)}?t=${Date.now()}`} 
                             alt={selectedPlayer.char_name}
                             className="w-full h-full object-cover"
                           />
