@@ -127,15 +127,28 @@ Regras:
 
       const userContent = `Título: ${chapter.title || "Sem título"}\nConteúdo: ${chapter.content || ""}`;
 
-      const response = await ai.models.generateContent({
-        model: 'gemini-2.0-flash',
-        contents: userContent,
-        config: {
-          systemInstruction: systemPrompt,
-        },
-      });
+      let response;
+      const modelsToTry = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-pro'];
       
-      const text = (response.text ?? '').trim();
+      for (let i = 0; i < modelsToTry.length; i++) {
+        try {
+          response = await ai.models.generateContent({
+            model: modelsToTry[i],
+            contents: userContent,
+            config: {
+              systemInstruction: systemPrompt,
+            },
+          });
+          break; // Sucesso, aborta o loop
+        } catch (err: any) {
+          console.warn(`[IA] Falha com o modelo API ${modelsToTry[i]}:`, err.message || err);
+          if (i === modelsToTry.length - 1) {
+             throw new Error("A cota de uso expirou para todos os modelos gratuitos configurados.");
+          }
+        }
+      }
+      
+      const text = (response?.text ?? '').trim();
       
       setGeneratedPrompt(text);
     } catch (err: any) {
@@ -753,6 +766,7 @@ Regras:
       <AnimatePresence>
         {editingSession && (
           <SessionModal 
+            key="session-modal"
             session={editingSession} 
             onSave={(updated) => {
               setSessions(sessions.map(s => s.id === updated.id ? updated : s));
@@ -764,6 +778,7 @@ Regras:
         )}
         {editingChapter && (
            <ChapterModal 
+             key="chapter-modal"
              chapter={editingChapter.chapter}
              chronicleId={id || ''}
              onSave={(updated) => {
@@ -777,7 +792,7 @@ Regras:
            />
         )}
         {showPromptModal && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div key="prompt-modal" className="fixed inset-0 z-[100] flex items-center justify-center p-4">
             <motion.div 
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
