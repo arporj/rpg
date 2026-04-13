@@ -200,7 +200,8 @@ Regras:
         await supabase.from('sessions').update({
           title: session.title,
           date_str: session.date_str,
-          order_index: session.order_index
+          order_index: session.order_index,
+          session_date: session.session_date
         }).eq('id', session.id);
 
         if (session.chapters) {
@@ -799,10 +800,19 @@ Regras:
           <SessionModal 
             key="session-modal"
             session={editingSession} 
-            onSave={(updated) => {
-              setSessions(sessions.map(s => s.id === updated.id ? updated : s));
-              setIsDirty({ ...isDirty, sessions: true });
-              setEditingSession(null);
+            onSave={async (updated) => {
+              setSaving(true);
+              const { error } = await supabase.from('sessions').update({
+                title: updated.title,
+                date_str: updated.date_str,
+                session_date: updated.session_date
+              }).eq('id', updated.id);
+              
+              if (!error) {
+                setSessions(sessions.map(s => s.id === updated.id ? { ...updated, chapters: s.chapters } : s));
+                setEditingSession(null);
+              }
+              setSaving(false);
             }} 
             onClose={() => setEditingSession(null)} 
           />
@@ -812,10 +822,19 @@ Regras:
              key="chapter-modal"
              chapter={editingChapter.chapter}
              chronicleId={id || ''}
-             onSave={(updated) => {
-               setSessions(sessions.map(s => s.id === editingChapter.sessionId ? { ...s, chapters: s.chapters?.map(c => c.id === updated.id ? updated : c) } : s));
-               setIsDirty({ ...isDirty, sessions: true });
-               setEditingChapter(null);
+             onSave={async (updated) => {
+               setSaving(true);
+               const { error } = await supabase.from('chapters').update({
+                 title: updated.title,
+                 content: updated.content,
+                 image_url: updated.image_url
+               }).eq('id', updated.id);
+
+               if (!error) {
+                 setSessions(sessions.map(s => s.id === editingChapter.sessionId ? { ...s, chapters: s.chapters?.map(c => c.id === updated.id ? updated : c) } : s));
+                 setEditingChapter(null);
+               }
+               setSaving(false);
              }}
              onClose={() => setEditingChapter(null)}
              onGeneratePrompt={handleGeneratePrompt}

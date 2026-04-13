@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { SubscribeBox } from '../components/SubscribeBox';
 
 export default function Adventure() {
-  const { slug, sessionId } = useParams<{ slug: string; sessionId?: string }>();
+  const { slug, sessionNumber } = useParams<{ slug: string; sessionNumber?: string }>();
   const [chronicle, setChronicle] = useState<Chronicle | null>(null);
   const [sessions, setSessions] = useState<Session[]>([]);
   const [players, setPlayers] = useState<Player[]>([]);
@@ -56,8 +56,10 @@ export default function Adventure() {
 
     if (sessData) {
       setSessions(sessData);
-      if (sessionId) {
-        setActiveSession(sessData.find(s => s.id === sessionId) || sessData[0] || null);
+      if (sessionNumber) {
+        const idx = parseInt(sessionNumber, 10) - 1;
+        const targetSession = sessData.find(s => s.order_index === idx);
+        setActiveSession(targetSession || sessData[0] || null);
       } else {
         setActiveSession(sessData[0] || null);
       }
@@ -104,11 +106,11 @@ export default function Adventure() {
         <nav className="flex-1 overflow-y-auto p-4 space-y-2 custom-scrollbar">
           {sessions.map((session) => (
             <button
-              key={session.id}
-              onClick={() => {
-                setActiveSession(session);
-                setIsSidebarOpen(false);
-              }}
+               key={session.id}
+               onClick={() => {
+                 navigate(`/${slug}/${(session.order_index + 1).toString().padStart(4, '0')}`);
+                 setIsSidebarOpen(false);
+               }}
               className={`w-full text-left p-4 rounded transition-all duration-300 group relative ${
                 activeSession?.id === session.id 
                   ? 'bg-gold/10 border-l-4 border-gold text-gold' 

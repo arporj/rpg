@@ -85,7 +85,8 @@ serve(async (req) => {
     }
 
     // Direct route to the session
-    const sessionLink = `http://rpg.andreric.com/codex/${chronicle.slug}/sessao/${session.id}`;
+    const sessionNumber = (session.order_index + 1).toString().padStart(4, '0');
+    const sessionLink = `http://rpg.andreric.com/${chronicle.slug}/${sessionNumber}`;
     const adventureTitle = chronicle.title;
     const sessionTitle = session.title;
 
