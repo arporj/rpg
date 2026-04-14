@@ -9,15 +9,23 @@ interface Subscriber {
   email: string;
   subscribe_all: boolean;
   created_at: string;
+  subscriptions?: string[]; // Array of chronicle IDs
+}
+
+interface ChronicleSimple {
+  id: string;
+  title: string;
 }
 
 export default function NewsletterManager() {
   const [subscribers, setSubscribers] = useState<Subscriber[]>([]);
+  const [chronicles, setChronicles] = useState<ChronicleSimple[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingSubscriber, setEditingSubscriber] = useState<Subscriber | null>(null);
   const [emailInput, setEmailInput] = useState('');
   const [subscribeAllInput, setSubscribeAllInput] = useState(false);
+  const [selectedChronicles, setSelectedChronicles] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [saving, setSaving] = useState(false);
   const navigate = useNavigate();
@@ -28,12 +36,23 @@ export default function NewsletterManager() {
 
   async function fetchSubscribers() {
     setLoading(true);
-    const { data, error } = await supabase
+    
+    // Fetch all chronicles for the labels and selection
+    const { data: chrData } = await supabase.from('chronicles').select('id, title');
+    if (chrData) setChronicles(chrData);
+
+    // Fetch subscribers
+    const { data: subData } = await supabase
       .from('newsletter_subscribers')
-      .select('*')
+      .select('*, newsletter_chronicle_subscriptions(chronicle_id)')
       .order('created_at', { ascending: false });
 
-    if (data) setSubscribers(data);
+    if (subData) {
+      setSubscribers(subData.map((s: any) => ({
+        ...s,
+        subscriptions: s.newsletter_chronicle_subscriptions?.map((link: any) => link.chronicle_id) || []
+      })));
+    }
     setLoading(false);
   }
 
@@ -42,10 +61,12 @@ export default function NewsletterManager() {
       setEditingSubscriber(sub);
       setEmailInput(sub.email);
       setSubscribeAllInput(sub.subscribe_all);
+      setSelectedChronicles(sub.subscriptions || []);
     } else {
       setEditingSubscriber(null);
       setEmailInput('');
       setSubscribeAllInput(false);
+      setSelectedChronicles([]);
     }
     setIsModalOpen(true);
   };
@@ -59,28 +80,48 @@ export default function NewsletterManager() {
       subscribe_all: subscribeAllInput,
     };
 
+    let subId = editingSubscriber?.id;
+
     if (editingSubscriber) {
       const { error } = await supabase
         .from('newsletter_subscribers')
         .update(payload)
         .eq('id', editingSubscriber.id);
-      
-      if (!error) {
-        setSubscribers(subscribers.map(s => s.id === editingSubscriber.id ? { ...s, ...payload } : s));
-        setIsModalOpen(false);
-      }
     } else {
       const { data, error } = await supabase
         .from('newsletter_subscribers')
         .insert([payload])
-        .select();
+        .select()
+        .single();
       
-      if (data) {
-        setSubscribers([data[0], ...subscribers]);
-        setIsModalOpen(false);
-      }
+      if (data) subId = data.id;
     }
+
+    if (subId) {
+      // Manage specific subscriptions
+      // 1. Clear existing links
+      await supabase.from('newsletter_chronicle_subscriptions').delete().eq('subscriber_id', subId);
+      
+      // 2. Add new links if not subscribe_all
+      if (!subscribeAllInput && selectedChronicles.length > 0) {
+        const links = selectedChronicles.map(chrId => ({
+          subscriber_id: subId,
+          chronicle_id: chrId
+        }));
+        await supabase.from('newsletter_chronicle_subscriptions').insert(links);
+      }
+      
+      await fetchSubscribers();
+      setIsModalOpen(false);
+    }
+    
     setSaving(false);
+  };
+
+  const handleToggleChronicle = (id: string) => {
+    setSelectedChronicles(prev => 
+      prev.includes(id) ? prev.filter(c => c !== id) : [...prev, id]
+    );
   };
 
   const handleDelete = async (id: string) => {
@@ -169,10 +210,23 @@ export default function NewsletterManager() {
                   <td className="p-4 text-center">
                     {sub.subscribe_all ? (
                       <span className="flex items-center justify-center gap-1 text-green-500 text-[10px] uppercase font-bold">
-                        <CheckCircle2 size={14} /> Sim
+                        <CheckCircle2 size={14} /> Todas
                       </span>
                     ) : (
-                      <span className="text-neutral-600 text-[10px] uppercase font-bold">—</span>
+                      <div className="flex flex-wrap justify-center gap-1">
+                        {sub.subscriptions && sub.subscriptions.length > 0 ? (
+                          sub.subscriptions.map(chrId => {
+                            const chr = chronicles.find(c => c.id === chrId);
+                            return chr ? (
+                              <span key={chrId} className="bg-gold/10 text-gold text-[9px] px-2 py-0.5 rounded border border-gold/20 whitespace-nowrap">
+                                {chr.title}
+                              </span>
+                            ) : null;
+                          })
+                        ) : (
+                          <span className="text-neutral-600 text-[10px] uppercase font-bold">—</span>
+                        )}
+                      </div>
                     )}
                   </td>
                   <td className="p-4 text-center text-neutral-500 text-xs">
@@ -254,6 +308,26 @@ export default function NewsletterManager() {
                     <p className="text-[10px] text-neutral-500 italic">Recebe avisos de todas as crônicas do Tomo.</p>
                   </div>
                 </div>
+
+                {!subscribeAllInput && (
+                  <div className="p-4 bg-neutral-900/50 border border-neutral-800 rounded-lg">
+                    <label className="text-[10px] uppercase text-neutral-600 font-bold block mb-3 tracking-widest">Aventuras Específicas</label>
+                    <div className="space-y-2 max-h-40 overflow-y-auto pr-2 custom-scrollbar">
+                      {chronicles.map(chr => (
+                        <label key={chr.id} className="flex items-center gap-3 cursor-pointer group">
+                          <button
+                            type="button"
+                            onClick={() => handleToggleChronicle(chr.id)}
+                            className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${selectedChronicles.includes(chr.id) ? 'bg-gold border-gold' : 'border-neutral-700 bg-ink group-hover:border-gold/50'}`}
+                          >
+                            {selectedChronicles.includes(chr.id) && <CheckCircle2 size={12} className="text-ink" />}
+                          </button>
+                          <span className="text-xs text-parchment/70 group-hover:text-parchment transition-colors font-serif">{chr.title}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 <div className="pt-4 flex gap-3">
                   <button 
