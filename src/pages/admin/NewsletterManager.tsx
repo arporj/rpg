@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
-import { Mail, Plus, X, Trash2, Edit2, CheckCircle2, Loader2, ArrowLeft, Search, Scroll } from 'lucide-react';
+import { Mail, Plus, X, Trash2, Edit2, CheckCircle2, Loader2, ArrowLeft, Search, Scroll, Send } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -17,22 +17,53 @@ interface ChronicleSimple {
   title: string;
 }
 
+interface SessionSimple {
+  id: string;
+  title: string;
+  chronicle_title: string;
+  created_at: string;
+}
+
 export default function NewsletterManager() {
   const [subscribers, setSubscribers] = useState<Subscriber[]>([]);
   const [chronicles, setChronicles] = useState<ChronicleSimple[]>([]);
+  const [sessions, setSessions] = useState<SessionSimple[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isNotifyModalOpen, setIsNotifyModalOpen] = useState(false);
   const [editingSubscriber, setEditingSubscriber] = useState<Subscriber | null>(null);
+  const [notifyingSubscriber, setNotifyingSubscriber] = useState<Subscriber | null>(null);
   const [emailInput, setEmailInput] = useState('');
   const [subscribeAllInput, setSubscribeAllInput] = useState(false);
   const [selectedChronicles, setSelectedChronicles] = useState<string[]>([]);
+  const [selectedSessionId, setSelectedSessionId] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [saving, setSaving] = useState(false);
+  const [notifying, setNotifying] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
     fetchSubscribers();
+    fetchSessions();
   }, []);
+
+  async function fetchSessions() {
+    const { data } = await supabase
+      .from('sessions')
+      .select('id, title, created_at, chronicles(title)')
+      .eq('is_published', true)
+      .order('created_at', { ascending: false });
+
+    if (data) {
+      setSessions(data.map((s: any) => ({
+        id: s.id,
+        title: s.title,
+        chronicle_title: s.chronicles?.title || 'Sem título',
+        created_at: s.created_at
+      })));
+      if (data.length > 0) setSelectedSessionId(data[0].id);
+    }
+  }
 
   async function fetchSubscribers() {
     setLoading(true);
@@ -137,6 +168,38 @@ export default function NewsletterManager() {
     }
   };
 
+  const handleOpenNotifyModal = (sub: Subscriber) => {
+    setNotifyingSubscriber(sub);
+    setIsNotifyModalOpen(true);
+  };
+
+  const handleSendManualNotification = async () => {
+    if (!notifyingSubscriber || !selectedSessionId) return;
+    
+    setNotifying(true);
+    try {
+      const { data, error } = await supabase.rpc('manual_send_session_email', {
+        p_email: notifyingSubscriber.email,
+        p_session_id: selectedSessionId
+      });
+
+      if (error) throw error;
+      
+      const result = data as any;
+      if (result.success) {
+        alert('Notificação enviada com sucesso!');
+        setIsNotifyModalOpen(false);
+      } else {
+        alert('Erro ao enviar: ' + (result.error || 'Erro desconhecido'));
+      }
+    } catch (err: any) {
+      console.error(err);
+      alert('Falha na comunicação com o servidor.');
+    } finally {
+      setNotifying(false);
+    }
+  };
+
   const filteredSubscribers = subscribers.filter(s => 
     s.email.toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -235,13 +298,22 @@ export default function NewsletterManager() {
                   <td className="p-4 text-right">
                     <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                       <button 
+                        onClick={() => handleOpenNotifyModal(sub)}
+                        title="Notificar manualmente"
+                        className="p-2 text-gold hover:text-yellow-400 transition-colors hover:bg-gold/10 rounded"
+                      >
+                        <Send size={16} />
+                      </button>
+                      <button 
                         onClick={() => handleOpenModal(sub)}
+                        title="Editar"
                         className="p-2 text-neutral-400 hover:text-gold transition-colors hover:bg-gold/10 rounded"
                       >
                         <Edit2 size={16} />
                       </button>
                       <button 
                         onClick={() => handleDelete(sub.id)}
+                        title="Excluir"
                         className="p-2 text-neutral-400 hover:text-red-500 transition-colors hover:bg-red-500/10 rounded"
                       >
                         <Trash2 size={16} />
@@ -346,6 +418,69 @@ export default function NewsletterManager() {
                   </button>
                 </div>
               </form>
+            </div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Modal Notify Manual */}
+      <AnimatePresence>
+        {isNotifyModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div 
+              className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+              onClick={() => setIsNotifyModalOpen(false)}
+            />
+            <div className="relative w-full max-w-md bg-ink border border-gold/30 rounded-lg p-8 shadow-[0_0_50px_rgba(212,175,55,0.2)]">
+              <button 
+                onClick={() => setIsNotifyModalOpen(false)}
+                className="absolute top-4 right-4 text-neutral-500 hover:text-white"
+              >
+                <X size={20} />
+              </button>
+
+              <div className="flex items-center gap-3 mb-6">
+                <Send className="w-6 h-6 text-gold" />
+                <h2 className="text-2xl font-cinzel text-gold uppercase tracking-widest">
+                  Notificar Leitor
+                </h2>
+              </div>
+
+              <div className="mb-6">
+                <p className="text-parchment/60 text-sm italic mb-4">
+                  Selecione qual sessão deseja enviar para <strong>{notifyingSubscriber?.email}</strong>.
+                </p>
+                
+                <label className="text-[10px] uppercase text-neutral-600 font-bold block mb-2 tracking-widest">Escolha a Sessão</label>
+                <select 
+                  value={selectedSessionId}
+                  onChange={(e) => setSelectedSessionId(e.target.value)}
+                  className="w-full bg-neutral-900 border border-neutral-800 rounded py-3 px-4 text-parchment focus:border-gold outline-none transition-colors font-serif appearance-none"
+                >
+                  {sessions.map(s => (
+                    <option key={s.id} value={s.id}>
+                      [{s.chronicle_title}] {s.title}
+                    </option>
+                  ))}
+                  {sessions.length === 0 && <option disabled>Nenhuma sessão publicada</option>}
+                </select>
+              </div>
+
+              <div className="flex gap-3">
+                <button 
+                  onClick={() => setIsNotifyModalOpen(false)}
+                  className="flex-1 py-3 border border-neutral-800 text-neutral-400 hover:bg-neutral-800 rounded font-cinzel font-bold text-xs uppercase tracking-widest transition-all"
+                >
+                  Cancelar
+                </button>
+                <button 
+                  onClick={handleSendManualNotification}
+                  disabled={notifying || sessions.length === 0}
+                  className="flex-1 py-3 bg-gold text-ink font-bold rounded hover:bg-yellow-500 font-cinzel text-xs uppercase tracking-widest transition-all flex items-center justify-center gap-2"
+                >
+                  {notifying ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Disparar E-mail'}
+                </button>
+              </div>
             </div>
           </div>
         )}
