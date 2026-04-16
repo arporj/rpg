@@ -234,7 +234,7 @@ export default function NewsletterManager() {
         </button>
       </header>
 
-      <main className="max-w-6xl mx-auto p-8">
+      <main className="max-w-6xl mx-auto p-4 md:p-8">
         {/* Search Bar */}
         <div className="mb-8 relative max-w-md">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-500 w-5 h-5" />
@@ -256,8 +256,8 @@ export default function NewsletterManager() {
         </div>
 
         {/* Table */}
-        <div className="bg-ink border border-gold/10 rounded-lg overflow-hidden shadow-2xl">
-          <table className="w-full text-left border-collapse">
+        <div className="bg-ink border border-gold/10 rounded-lg overflow-x-auto shadow-2xl custom-scrollbar">
+          <table className="w-full text-left border-collapse min-w-[700px]">
             <thead>
               <tr className="border-b border-gold/10 bg-gold/5">
                 <th className="p-4 text-xs uppercase tracking-wider text-gold font-bold">E-mail</th>
