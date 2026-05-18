@@ -21,7 +21,9 @@ serve(async (req) => {
       throw new Error("Missing Supabase credentials");
     }
 
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+      db: { schema: 'rpg' }
+    });
 
     // Get the exact payload injected by the database webhook
     const payload = await req.json();
