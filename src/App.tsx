@@ -5,7 +5,6 @@ import Adventure from './pages/Adventure';
 import Login from './pages/admin/Login';
 import Dashboard from './pages/admin/Dashboard';
 import ChronicleEditor from './pages/admin/ChronicleEditor';
-import Setup from './pages/admin/Setup';
 import NewsletterManager from './pages/admin/NewsletterManager';
 
 function App() {
@@ -18,7 +17,6 @@ function App() {
       
       {/* Admin Routes */}
       <Route path="/admin" element={<Login />} />
-      <Route path="/admin/setup" element={<Setup />} />
       <Route path="/admin/dashboard" element={<Dashboard />} />
       <Route path="/admin/newsletter" element={<NewsletterManager />} />
       <Route path="/admin/chronicle/:id" element={<ChronicleEditor />} />
