@@ -98,7 +98,7 @@ export default function ChronicleEditor() {
     
     const { error } = await supabase.storage
       .from(STORAGE_BUCKET)
-      .upload(path, file, { upsert: true });
+      .upload(path, file, { upsert: true, cacheControl: '0' });
 
     if (error) {
       throw error;
@@ -113,7 +113,7 @@ export default function ChronicleEditor() {
     
     const { error } = await supabase.storage
       .from(STORAGE_BUCKET)
-      .upload(path, file, { upsert: true });
+      .upload(path, file, { upsert: true, cacheControl: '0' });
 
     if (error) {
       throw error;
@@ -605,10 +605,11 @@ Regras:
                                       setIsDirty(prev => ({ ...prev, players: true }));
                                     } catch (err: any) {
                                       console.error('Erro no upload do rosto:', err);
+                                      const rawErrorMsg = err?.message || err?.error_description || JSON.stringify(err);
                                       setPlayerUploadError({
                                         playerId: p.id,
                                         type: 'face',
-                                        message: `Falha no upload da Face: ${err?.message || JSON.stringify(err)}`
+                                        message: `Erro ao enviar foto do Rosto. Detalhes técnicos: ${rawErrorMsg}`
                                       });
                                     }
                                   }}/>
@@ -617,7 +618,7 @@ Regras:
                                   <span className="text-[7px] text-gold/60 mt-0.5 font-bold">200x200px</span>
                                 </label>
                               </div>
-                              <p className="text-[9px] text-neutral-500 font-semibold mt-1 text-center">Rosto: 200x200px | Máx: 5MB</p>
+                              <p className="text-[11px] text-gold/60 mt-2 text-center font-serif">Resolução Recomendada: 200x200px (Proporção 1:1) | Limite de tamanho: 5MB</p>
                               {playerUploadError?.playerId === p.id && playerUploadError.type === 'face' && (
                                 <div className="text-[9px] text-red-500 font-bold bg-red-950/20 border border-red-900/50 p-1.5 rounded mt-1.5 max-w-[120px] overflow-auto font-mono text-center leading-tight">
                                   {playerUploadError.message}
@@ -698,10 +699,11 @@ Regras:
                                       setIsDirty(prev => ({ ...prev, players: true }));
                                     } catch (err: any) {
                                       console.error('Erro no upload do corpo:', err);
+                                      const rawErrorMsg = err?.message || err?.error_description || JSON.stringify(err);
                                       setPlayerUploadError({
                                         playerId: p.id,
                                         type: 'body',
-                                        message: `Falha no upload do Corpo: ${err?.message || JSON.stringify(err)}`
+                                        message: `Erro ao enviar foto do Corpo. Detalhes técnicos: ${rawErrorMsg}`
                                       });
                                     }
                                   }}/>
@@ -719,7 +721,7 @@ Regras:
                                 placeholder="Ex: pic_plr_body.jpg" 
                                 className="w-full md:w-32 bg-neutral-900/50 border border-neutral-700/50 focus:border-gold outline-none px-2 py-1 text-neutral-300 text-[10px] rounded font-mono mt-1"
                               />
-                              <p className="text-[9px] text-neutral-500 font-semibold mt-1 max-w-[130px] leading-tight text-center">Portrait: 400x600px | Máx: 5MB</p>
+                              <p className="text-[11px] text-gold/60 mt-2 text-center font-serif">Resolução Recomendada: 400x600px (Proporção 2:3) | Limite de tamanho: 5MB</p>
                               {playerUploadError?.playerId === p.id && playerUploadError.type === 'body' && (
                                 <div className="text-[9px] text-red-500 font-bold bg-red-950/20 border border-red-900/50 p-2 rounded mt-1.5 max-w-[130px] overflow-auto font-mono leading-tight">
                                   {playerUploadError.message}
