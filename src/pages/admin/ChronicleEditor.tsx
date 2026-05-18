@@ -49,6 +49,8 @@ export default function ChronicleEditor() {
   const [editingSession, setEditingSession] = useState<Session | null>(null);
   const [editingChapter, setEditingChapter] = useState<{sessionId: string; chapter: Chapter} | null>(null);
   const [expandedSessions, setExpandedSessions] = useState<string[]>([]);
+  const [playersTimestamp, setPlayersTimestamp] = useState<number>(Date.now());
+  const [playerUploadError, setPlayerUploadError] = useState<{ playerId: string; type: 'face' | 'body'; message: string } | null>(null);
 
   useEffect(() => {
     if (id) fetchData();
@@ -570,32 +572,57 @@ Regras:
 
                         <div className="flex flex-col gap-6 md:gap-8">
                           <div className="flex flex-col sm:flex-row items-center gap-6">
-                            <div className="relative group/avatar shrink-0">
-                              <div className="w-24 h-24 rounded-full border-2 border-gold/20 overflow-hidden bg-neutral-800 shadow-inner">
-                                {p.face_url ? (
-                                  <img 
-                                    src={`${getStorageUrl(p.face_url)}?t=${Date.now()}`} 
-                                    key={p.face_url}
-                                    className="w-full h-full object-cover" 
-                                  />
-                                ) : (
-                                  <div className="w-full h-full flex items-center justify-center"><Users className="text-neutral-700" size={32} /></div>
-                                )}
+                            <div className="flex flex-col items-center shrink-0">
+                              <div className="relative group/avatar">
+                                <div className="w-24 h-24 rounded-full border-2 border-gold/20 overflow-hidden bg-neutral-800 shadow-inner">
+                                  {p.face_url ? (
+                                    <img 
+                                      src={`${getStorageUrl(p.face_url)}?t=${playersTimestamp}`} 
+                                      key={`${p.face_url}-${playersTimestamp}`}
+                                      className="w-full h-full object-cover" 
+                                    />
+                                  ) : (
+                                    <div className="w-full h-full flex items-center justify-center"><Users className="text-neutral-700" size={32} /></div>
+                                  )}
+                                </div>
+                                <label className="absolute inset-0 bg-black/75 flex flex-col items-center justify-center opacity-0 group-hover/avatar:opacity-100 cursor-pointer transition-opacity rounded-full p-2 text-center">
+                                  <input type="file" className="hidden" accept="image/*" onChange={async (e: React.ChangeEvent<HTMLInputElement>) => {
+                                    const file = e.target.files?.[0];
+                                    if (!file) return;
+                                    setPlayerUploadError(null);
+                                    if (file.size > 5 * 1024 * 1024) {
+                                      setPlayerUploadError({
+                                        playerId: p.id,
+                                        type: 'face',
+                                        message: 'O arquivo é muito grande. O limite máximo permitido é de 5MB.'
+                                      });
+                                      return;
+                                    }
+                                    try {
+                                      const path = await handlePlayerFileUpload(file, p, 'face');
+                                      updatePlayer(p.id, { face_url: path });
+                                      setPlayersTimestamp(Date.now());
+                                      setIsDirty(prev => ({ ...prev, players: true }));
+                                    } catch (err: any) {
+                                      console.error('Erro no upload do rosto:', err);
+                                      setPlayerUploadError({
+                                        playerId: p.id,
+                                        type: 'face',
+                                        message: `Falha no upload da Face: ${err?.message || JSON.stringify(err)}`
+                                      });
+                                    }
+                                  }}/>
+                                  <Upload size={16} className="text-gold mb-1" />
+                                  <span className="text-[8px] text-white font-bold uppercase tracking-tight leading-none">Upload Face</span>
+                                  <span className="text-[7px] text-gold/60 mt-0.5 font-bold">200x200px</span>
+                                </label>
                               </div>
-                              <label className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover/avatar:opacity-100 cursor-pointer transition-opacity rounded-full">
-                                <input type="file" className="hidden" accept="image/*" onChange={async (e: React.ChangeEvent<HTMLInputElement>) => {
-                                  const file = e.target.files?.[0];
-                                  if (!file) return;
-                                  try {
-                                    const path = await handlePlayerFileUpload(file, p, 'face');
-                                    updatePlayer(p.id, { face_url: path });
-                                    setIsDirty(prev => ({ ...prev, players: true }));
-                                  } catch (err) {
-                                    console.error('Erro no upload do rosto:', err);
-                                  }
-                                }}/>
-                                <Upload size={20} className="text-gold" />
-                              </label>
+                              <p className="text-[9px] text-neutral-500 font-semibold mt-1 text-center">Rosto: 200x200px | Máx: 5MB</p>
+                              {playerUploadError?.playerId === p.id && playerUploadError.type === 'face' && (
+                                <div className="text-[9px] text-red-500 font-bold bg-red-950/20 border border-red-900/50 p-1.5 rounded mt-1.5 max-w-[120px] overflow-auto font-mono text-center leading-tight">
+                                  {playerUploadError.message}
+                                </div>
+                              )}
                             </div>
 
                             <div className="flex-1 space-y-4">
@@ -644,26 +671,43 @@ Regras:
                               <div className="w-full md:w-32 aspect-[2/3] bg-neutral-900 border border-neutral-800 rounded-sm relative group/body overflow-hidden shadow-lg">
                                 {p.body_url ? (
                                   <img 
-                                    src={`${getStorageUrl(p.body_url)}?t=${Date.now()}`} 
-                                    key={p.body_url} 
+                                    src={`${getStorageUrl(p.body_url)}?t=${playersTimestamp}`} 
+                                    key={`${p.body_url}-${playersTimestamp}`} 
                                     className="w-full h-full object-cover" 
                                   />
                                 ) : (
                                   <div className="w-full h-full flex items-center justify-center opacity-20"><UserCheck size={32}/></div>
                                 )}
-                                <label className="absolute inset-0 bg-black/80 flex items-center justify-center opacity-0 group-hover/body:opacity-100 cursor-pointer transition-opacity">
+                                <label className="absolute inset-0 bg-black/75 flex flex-col items-center justify-center opacity-0 group-hover/body:opacity-100 cursor-pointer transition-opacity p-2 text-center">
                                   <input type="file" className="hidden" accept="image/*" onChange={async (e: React.ChangeEvent<HTMLInputElement>) => {
                                     const file = e.target.files?.[0];
                                     if (!file) return;
+                                    setPlayerUploadError(null);
+                                    if (file.size > 5 * 1024 * 1024) {
+                                      setPlayerUploadError({
+                                        playerId: p.id,
+                                        type: 'body',
+                                        message: 'O arquivo é muito grande. O limite máximo permitido é de 5MB.'
+                                      });
+                                      return;
+                                    }
                                     try {
                                       const path = await handlePlayerFileUpload(file, p, 'body');
                                       updatePlayer(p.id, { body_url: path });
+                                      setPlayersTimestamp(Date.now());
                                       setIsDirty(prev => ({ ...prev, players: true }));
-                                    } catch (err) {
+                                    } catch (err: any) {
                                       console.error('Erro no upload do corpo:', err);
+                                      setPlayerUploadError({
+                                        playerId: p.id,
+                                        type: 'body',
+                                        message: `Falha no upload do Corpo: ${err?.message || JSON.stringify(err)}`
+                                      });
                                     }
                                   }}/>
-                                  <Upload size={24} className="text-gold" />
+                                  <Upload size={20} className="text-gold mb-1" />
+                                  <span className="text-[10px] text-white font-bold uppercase tracking-tight leading-none">Upload Corpo</span>
+                                  <span className="text-[8px] text-gold/60 mt-0.5 font-bold">Portrait 2:3</span>
                                 </label>
                               </div>
                               <input 
@@ -675,7 +719,12 @@ Regras:
                                 placeholder="Ex: pic_plr_body.jpg" 
                                 className="w-full md:w-32 bg-neutral-900/50 border border-neutral-700/50 focus:border-gold outline-none px-2 py-1 text-neutral-300 text-[10px] rounded font-mono mt-1"
                               />
-                              <p className="text-[8px] text-neutral-600 font-medium text-center">Portrait: 2:3</p>
+                              <p className="text-[9px] text-neutral-500 font-semibold mt-1 max-w-[130px] leading-tight text-center">Portrait: 400x600px | Máx: 5MB</p>
+                              {playerUploadError?.playerId === p.id && playerUploadError.type === 'body' && (
+                                <div className="text-[9px] text-red-500 font-bold bg-red-950/20 border border-red-900/50 p-2 rounded mt-1.5 max-w-[130px] overflow-auto font-mono leading-tight">
+                                  {playerUploadError.message}
+                                </div>
+                              )}
                             </div>
 
                             <div className="flex-1 flex flex-col gap-4">
