@@ -37,3 +37,4 @@ yarn-error.log*
 # Project specific
 .gemini/
 antigravity/MASTER_INDEX.md
+supabase/.temp/
