@@ -37,7 +37,8 @@ export function ChapterModal({ chapter: initialChapter, chronicleId, onSave, onC
       setUploadTimestamp(Date.now());
     } catch (err: any) {
       console.error(err);
-      setError(`Erro ao enviar imagem: Falha no upload. Detalhes técnicos: ${err?.message || JSON.stringify(err)}`);
+      const rawErrorMsg = err?.message || err?.error_description || JSON.stringify(err);
+      setError(`Erro ao enviar imagem. Detalhes técnicos: ${rawErrorMsg}`);
     } finally {
       setUploading(false);
     }
@@ -112,6 +113,7 @@ export function ChapterModal({ chapter: initialChapter, chronicleId, onSave, onC
                   </label>
                 )}
               </div>
+              <p className="text-[11px] text-gold/60 mt-2 text-center font-serif">Resolução Recomendada: 1200x675px (Proporção 16:9) | Limite de tamanho: 5MB</p>
               {error && (
                 <div className="p-3 bg-red-950/50 border border-red-500/40 text-red-400 text-[11px] leading-relaxed rounded font-mono break-words">
                   <p className="font-bold mb-1 uppercase tracking-wider text-[10px]">⚠️ Falha no Envio</p>
