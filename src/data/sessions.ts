@@ -25,7 +25,7 @@ export const SESSIONS: Session[] = [
     chapters: [
       {
         title: 'Capítulo 1 — A Tempestade',
-        imageUrl: '/assets/illustrations/cap1_tempestade.png',
+        imageUrl: '/assets/illustrations/dia001_cap001_tempestade.png',
         content: `Era para ser apenas mais uma noite comum entre amigos.
 
 A churrasqueira estava acesa, a carne assando lentamente enquanto o cheiro se misturava com o ar úmido do início da noite. Copos sobre a mesa, risadas soltas e uma pilha de fichas e dados aguardando o início de mais uma sessão de RPG. André, Rodrigo, Alícia, Eric e Lucas já estavam acomodados, discutindo regras, personagens e possibilidades, como faziam tantas outras vezes.
@@ -54,7 +54,7 @@ E então, tudo ficou escuro.`,
       },
       {
         title: 'Capítulo 2 — O Chamado',
-        imageUrl: '/assets/illustrations/cap2_morte.png',
+        imageUrl: '/assets/illustrations/dia001_cap002_morte.png',
         content: `A consciência voltou devagar, como se emergisse de um lugar profundo demais.
 
 Nenhum deles conseguia abrir os olhos, nem mover o corpo. Era como estar preso dentro da própria mente, consciente, mas desconectado do mundo. Ao redor, não havia som, não havia forma — apenas uma escuridão absoluta.
@@ -89,7 +89,7 @@ E então veio o retorno.`,
       },
       {
         title: 'Capítulo 3 — O Despertar',
-        imageUrl: '/assets/illustrations/cap3_despertar.png',
+        imageUrl: '/assets/illustrations/dia001_cap003_despertar.png',
         content: `Quando finalmente conseguiram abrir os olhos, o mundo já não era mais o mesmo.
 
 O ar era frio, carregado com o cheiro úmido de pedra e terra. Estavam em um corredor que parecia impossível de existir: as paredes eram feitas de tijolos bem estruturados, mas se fundiam com a própria rocha da caverna, enquanto estalactites pendiam do teto. Pequenas pedras azuladas incrustadas nas paredes emitiam uma luz fraca, suficiente apenas para revelar o ambiente ao redor.
@@ -126,7 +126,7 @@ Ou uma sentença.`,
       },
       {
         title: 'Capítulo 4 — O Primeiro Caçador',
-        imageUrl: '/assets/illustrations/cap4_naga.png',
+        imageUrl: '/assets/illustrations/dia001_cap004_naga.png',
         content: `A conversa foi interrompida por um som que não pertencia àquele momento.
 
 Um silvo.
@@ -211,7 +211,7 @@ Eles estavam cercados.`,
       },
       {
         title: 'Capítulo 5 — A Pedra Oculta',
-        imageUrl: '/assets/illustrations/cap5_pedra_oculta.png',
+        imageUrl: '/assets/illustrations/dia001_cap005_pedra_oculta.png',
         content: `Encurralados entre dois perigos que se aproximavam rapidamente, o grupo se viu pela primeira vez diante da possibilidade real de não sobreviver nem aos primeiros minutos naquele novo mundo.
 
 As vozes serpenteantes ecoavam atrás deles, carregadas de irritação e alerta, enquanto à frente o som de passos se tornava cada vez mais evidente. O alarme preenchia o corredor com um som agudo e incessante, tornando impossível pensar com clareza.
@@ -240,7 +240,7 @@ Mas, pelo menos, ainda estavam vivos.`,
       },
       {
         title: 'Capítulo 6 — O Quarto Esquecido',
-        imageUrl: '/assets/illustrations/cap6_mimico.png',
+        imageUrl: '/assets/illustrations/dia001_cap006_mimico.png',
         content: `A escuridão dentro da sala era quase completa.
 
 Para André, Eric e Rodrigo, isso não era um problema — seus novos olhos se adaptavam naturalmente à ausência de luz. Mas para Alícia e Lucas, o ambiente era apenas um vazio indistinto.
@@ -303,7 +303,7 @@ E oportunidade.`,
       },
       {
         title: 'Capítulo 7 — O Poder do Amuleto',
-        imageUrl: '/assets/illustrations/cap7_amuleto.png',
+        imageUrl: '/assets/illustrations/dia001_cap007_amuleto.png',
         content: `Os testes começaram ali mesmo.
 
 André foi o primeiro a tentar. Concentrou-se na criatura que haviam enfrentado anteriormente — a naga — mas nada aconteceu. Houve um bloqueio, uma resistência invisível.
@@ -334,7 +334,7 @@ Já com uma compreensão básica do artefato, decidiram seguir em frente.`,
       },
       {
         title: 'Capítulo 8 — As Runas e o Guardião',
-        imageUrl: '/assets/illustrations/cap8_golem.png',
+        imageUrl: '/assets/illustrations/dia001_cap008_golem.png',
         content: `Ao se aproximarem da porta, Lucas fez o que já começava a se tornar seu papel natural: investigar.
 
 Foi André e Eric, no entanto, que perceberam primeiro.
@@ -411,7 +411,7 @@ Esperando.`,
       },
       {
         title: 'Capítulo 9 — A Solução Invisível',
-        imageUrl: '/assets/illustrations/cap9_mosca.png',
+        imageUrl: '/assets/illustrations/dia001_cap009_mosca.png',
         content: `O silêncio se tornou tenso.
 
 As visões começaram a retornar lentamente para os que haviam sido afetados, e Lucas decidiu testar algo.
@@ -454,7 +454,7 @@ E talvez nunca tivesse sido.`,
       },
       {
         title: 'Capítulo 10 — O Rei Aprisionado',
-        imageUrl: '/assets/illustrations/cap10_rei.png',
+        imageUrl: '/assets/illustrations/dia001_cap010_rei.png',
         content: `A escada os levou a um salão amplo, imponente, com cerca de trinta metros de comprimento por vinte de largura. Tapeçarias antigas decoravam as paredes, e grandes colunas sustentavam o teto. Não havia janelas, nem outras portas visíveis.
 
 No centro, ao fundo, um trono.
@@ -551,7 +551,7 @@ E então, finalmente, todos atravessaram o portal.`,
       },
       {
         title: 'Capítulo 11 — O Mundo Além',
-        imageUrl: '/assets/illustrations/cap11_planicie.png',
+        imageUrl: '/assets/illustrations/dia001_cap011_planicie.png',
         content: `A transição foi imediata.
 
 Sem escuridão.
