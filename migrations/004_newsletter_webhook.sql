@@ -5,11 +5,11 @@
 CREATE EXTENSION IF NOT EXISTS "http" WITH SCHEMA "extensions";
 
 -- 2. Função que realiza a chamada HTTP para a Edge Function
-CREATE OR REPLACE FUNCTION public.handle_session_publish_webhook()
+CREATE OR REPLACE FUNCTION rpg.handle_session_publish_webhook()
 RETURNS trigger
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public
+SET search_path = rpg, public
 AS $$
 BEGIN
   -- Disparar apenas se a sessão mudou de rascunho para publicado
@@ -25,8 +25,8 @@ BEGIN
         )::text,
         'application/json',
         jsonb_build_object(
-          'Authorization', 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt3ZHdlenRpbHNveHhjZ3VkdHN6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQxMzI2NzcsImV4cCI6MjA1OTcwODY3N30.IJY1Ol_xmL7Y-GJMqjuCCglDq9H-K4RhxxZK0pqKDMo',
-          'apikey', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt3ZHdlenRpbHNveHhjZ3VkdHN6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQxMzI2NzcsImV4cCI6MjA1OTcwODY3N30.IJY1Ol_xmL7Y-GJMqjuCCglDq9H-K4RhxxZK0pqKDMo'
+          'Authorization', 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt3ZHdlenRpbHNveHhjZ3VkdHN6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQxMzI2NzcsImV4cCI6MjA5OTcwODY3N30.IJY1Ol_xmL7Y-GJMqjuCCglDq9H-K4RhxxZK0pqKDMo',
+          'apikey', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt3ZHdlenRpbHNveHhjZ3VkdHN6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQxMzI2NzcsImV4cCI6MjA5OTcwODY3N30.IJY1Ol_xmL7Y-GJMqjuCCglDq9H-K4RhxxZK0pqKDMo'
         )::text
       );
   END IF;
@@ -35,8 +35,8 @@ END;
 $$;
 
 -- 3. Criação do Gatilho (Trigger) na tabela sessions
-DROP TRIGGER IF EXISTS on_session_published ON public.sessions;
+DROP TRIGGER IF EXISTS on_session_published ON rpg.sessions;
 CREATE TRIGGER on_session_published
-  AFTER UPDATE ON public.sessions
+  AFTER UPDATE ON rpg.sessions
   FOR EACH ROW
-  EXECUTE FUNCTION public.handle_session_publish_webhook();
+  EXECUTE FUNCTION rpg.handle_session_publish_webhook();
