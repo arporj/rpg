@@ -562,7 +562,7 @@ Regras:
                   {players.map((p) => {
                     const systemLabel = (chronicle as any).systems?.advancement_label || 'Nível';
                     return (
-                      <div key={p.id} className="bg-ink p-8 border border-gold/10 rounded-sm group hover:border-gold/30 transition-all shadow-xl relative">
+                      <div key={p.id} className="bg-ink p-6 border border-gold/10 rounded-sm group hover:border-gold/30 transition-all shadow-xl relative">
                         <button 
                           onClick={() => deletePlayer(p.id)}
                           className="absolute top-4 right-4 p-2 text-neutral-800 hover:text-red-600 transition-colors opacity-0 group-hover:opacity-100"
@@ -572,7 +572,7 @@ Regras:
 
                         <div className="flex flex-col gap-6 md:gap-8">
                           <div className="flex flex-col sm:flex-row items-center gap-6">
-                            <div className="flex flex-col items-center shrink-0">
+                            <div className="flex flex-col items-center w-full sm:w-28 shrink-0 text-center">
                               <div className="relative group/avatar">
                                 <div className="w-24 h-24 rounded-full border-2 border-gold/20 overflow-hidden bg-neutral-800 shadow-inner">
                                   {p.face_url ? (
@@ -618,7 +618,9 @@ Regras:
                                   <span className="text-[7px] text-gold/60 mt-0.5 font-bold">200x200px</span>
                                 </label>
                               </div>
-                              <p className="text-[11px] text-gold/60 mt-2 text-center font-serif">Resolução Recomendada: 200x200px (Proporção 1:1) | Limite de tamanho: 5MB</p>
+                              <p className="text-[9px] text-neutral-400 mt-2 text-center font-sans leading-tight">
+                                Rec: 200x200px (1:1)<br />Máx: 5MB
+                              </p>
                               {playerUploadError?.playerId === p.id && playerUploadError.type === 'face' && (
                                 <div className="text-[9px] text-red-500 font-bold bg-red-950/20 border border-red-900/50 p-1.5 rounded mt-1.5 max-w-[120px] overflow-auto font-mono text-center leading-tight">
                                   {playerUploadError.message}
@@ -626,7 +628,7 @@ Regras:
                               )}
                             </div>
 
-                            <div className="flex-1 space-y-4">
+                            <div className="flex-1 space-y-4 w-full">
                               <div>
                                 <label className="text-[10px] uppercase text-neutral-600 font-bold block mb-1 tracking-widest">Nome do Personagem</label>
                                 <input 
@@ -667,9 +669,9 @@ Regras:
                           </div>
 
                           <div className="flex flex-col md:flex-row gap-8">
-                            <div className="space-y-2">
+                            <div className="space-y-2 w-full md:w-28 shrink-0 flex flex-col items-center md:items-start">
                               <label className="text-[10px] uppercase text-gold/40 font-bold block tracking-widest">Corpo Inteiro</label>
-                              <div className="w-full md:w-32 aspect-[2/3] bg-neutral-900 border border-neutral-800 rounded-sm relative group/body overflow-hidden shadow-lg">
+                              <div className="w-full md:w-28 aspect-[2/3] bg-neutral-900 border border-neutral-800 rounded-sm relative group/body overflow-hidden shadow-lg">
                                 {p.body_url ? (
                                   <img 
                                     src={`${getStorageUrl(p.body_url)}?t=${playersTimestamp}`} 
@@ -719,9 +721,11 @@ Regras:
                                   setIsDirty({ ...isDirty, players: true });
                                 }}
                                 placeholder="Ex: pic_plr_body.jpg" 
-                                className="w-full md:w-32 bg-neutral-900/50 border border-neutral-700/50 focus:border-gold outline-none px-2 py-1 text-neutral-300 text-[10px] rounded font-mono mt-1"
+                                className="w-full md:w-28 bg-neutral-900/50 border border-neutral-700/50 focus:border-gold outline-none px-2 py-1 text-neutral-300 text-[10px] rounded font-mono mt-1"
                               />
-                              <p className="text-[11px] text-gold/60 mt-2 text-center font-serif">Resolução Recomendada: 400x600px (Proporção 2:3) | Limite de tamanho: 5MB</p>
+                              <p className="text-[9px] text-neutral-400 mt-2 text-center md:text-left font-sans leading-tight">
+                                Rec: 400x600px (2:3)<br />Máx: 5MB
+                              </p>
                               {playerUploadError?.playerId === p.id && playerUploadError.type === 'body' && (
                                 <div className="text-[9px] text-red-500 font-bold bg-red-950/20 border border-red-900/50 p-2 rounded mt-1.5 max-w-[130px] overflow-auto font-mono leading-tight">
                                   {playerUploadError.message}
@@ -729,7 +733,7 @@ Regras:
                               )}
                             </div>
 
-                            <div className="flex-1 flex flex-col gap-4">
+                            <div className="flex-1 flex flex-col gap-4 w-full">
                               <div className="w-full">
                                 <label className="text-[10px] uppercase text-neutral-600 font-bold block mb-1 tracking-widest">Raça</label>
                                 <input 
