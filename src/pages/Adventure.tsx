@@ -15,6 +15,7 @@ export default function Adventure() {
   const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [sessionLoadedAt] = useState(() => Date.now());
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -176,7 +177,7 @@ export default function Adventure() {
                 >
                   <div className="w-8 h-8 md:w-10 md:h-10 rounded-full border-2 border-gold/30 overflow-hidden bg-neutral-900 shadow-xl transition-all group-hover:border-gold shrink-0">
                     <img 
-                      src={`${getStorageUrl(player.face_url)}?t=${Date.now()}`} 
+                      src={`${getStorageUrl(player.face_url)}?t=${sessionLoadedAt}`} 
                       alt={player.char_name}
                       className="w-full h-full object-cover"
                     />
@@ -242,13 +243,12 @@ export default function Adventure() {
                     </div>
 
                     {chapter.image_url && (
-                      <div className="relative rounded-sm overflow-hidden border border-gold/20 shadow-2xl bg-ink/40 group/img">
+                      <div className="relative rounded-sm overflow-hidden border border-gold/20 shadow-2xl bg-neutral-950/40 group/img flex justify-center items-center p-1 md:p-2">
                         <img 
-                          src={`${getStorageUrl(chapter.image_url)}?t=${Date.now()}`} 
+                          src={`${getStorageUrl(chapter.image_url)}?t=${sessionLoadedAt}`} 
                           alt={chapter.title}
-                          className="w-full aspect-video object-cover object-top transition-transform duration-1000 group-hover/img:scale-105"
+                          className="max-h-[600px] w-auto h-auto object-contain transition-transform duration-1000 group-hover/img:scale-[1.02] mx-auto rounded-sm"
                         />
-                        <div className="absolute inset-0 bg-gradient-to-t from-ink/80 via-transparent to-transparent" />
                       </div>
                     )}
 
@@ -297,7 +297,7 @@ export default function Adventure() {
               <div className="w-full md:w-[40%] bg-ink border-b md:border-b-0 md:border-r border-gold/10 relative overflow-hidden group min-h-[300px] md:min-h-0 shrink-0">
                  {selectedPlayer.body_url ? (
                     <img 
-                     src={`${getStorageUrl(selectedPlayer.body_url)}?t=${Date.now()}`} 
+                     src={`${getStorageUrl(selectedPlayer.body_url)}?t=${sessionLoadedAt}`} 
                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" 
                     />
                  ) : (
@@ -315,7 +315,7 @@ export default function Adventure() {
                     <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 md:gap-6 mb-4 text-center sm:text-left">
                        <div className="w-20 h-20 rounded-full border-2 border-gold/30 overflow-hidden bg-ink shadow-xl shrink-0">
                           <img 
-                            src={`${getStorageUrl(selectedPlayer.face_url)}?t=${Date.now()}`} 
+                            src={`${getStorageUrl(selectedPlayer.face_url)}?t=${sessionLoadedAt}`} 
                             alt={selectedPlayer.char_name}
                             className="w-full h-full object-cover"
                           />
