@@ -16,6 +16,9 @@ export const STORAGE_BUCKET = 'media';
 export const getStorageUrl = (path: string | null) => {
   if (!path) return '';
   if (path.startsWith('http')) return path;
+  if (path.startsWith('/') || path.startsWith('assets/')) {
+    return path.startsWith('/') ? path : `/${path}`;
+  }
   if (!path.includes('/')) {
     return `/assets/illustrations/${path}`;
   }

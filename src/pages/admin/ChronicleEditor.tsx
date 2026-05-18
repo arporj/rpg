@@ -11,7 +11,7 @@ import {
   Users, Book, MessageSquare, Image as ImageIcon, Loader2,
   CheckCircle2, XCircle, Upload, UserCheck, Wand2, Copy, Check, X
 } from 'lucide-react';
-import { getStorageUrl, STORAGE_BUCKET } from '../../lib/supabase';
+import { getStorageUrl } from '../../lib/supabase';
 
 // Helper to sanitize filenames for Supabase Storage
 const slugify = (text: string) => {
@@ -80,22 +80,10 @@ export default function ChronicleEditor() {
   }
 
   // --- Upload Logic ---
-  const handleFileUpload = async (file: File, path: string, existingPath: string | null) => {
-    // Só reutiliza o caminho se for um caminho interno do storage (não começa com http)
-    const targetPath = (existingPath && !existingPath.startsWith('http')) ? existingPath : path;
-    
-    const { data, error } = await supabase.storage
-      .from(STORAGE_BUCKET)
-      .upload(targetPath, file, { 
-        upsert: true,
-        contentType: file.type 
-      });
-
-    if (error) {
-      console.error('Upload error:', error);
-      throw error;
-    }
-    return targetPath;
+  const handleFileUpload = async (file: File) => {
+    // Não gravamos no Supabase Storage. Apenas retornamos o nome do arquivo selecionado
+    // para ser gravado no banco de dados, pois as imagens são físicas.
+    return file.name;
   };
 
   const handleGeneratePrompt = async (chapter: any) => {
@@ -565,8 +553,7 @@ Regras:
                                 <input type="file" className="hidden" accept="image/*" onChange={async (e) => {
                                   const file = e.target.files?.[0];
                                   if (!file) return;
-                                  const fileName = `pic_plr_${slugify(p.char_name || 'unknown')}_face.jpg`;
-                                  const path = await handleFileUpload(file, fileName, p.face_url);
+                                  const path = await handleFileUpload(file);
                                   updatePlayer(p.id, { face_url: path });
                                   setIsDirty({ ...isDirty, players: true });
                                 }}/>
@@ -599,6 +586,18 @@ Regras:
                                   className="block w-full bg-transparent text-lg text-neutral-300 outline-none italic border-b border-neutral-800 focus:border-gold/30 pb-1 transition-all" 
                                 />
                               </div>
+                              <div>
+                                <label className="text-[10px] uppercase text-neutral-600 font-bold block mb-1 tracking-widest">Arquivo do Rosto</label>
+                                <input 
+                                  value={p.face_url || ''} 
+                                  onChange={(e) => {
+                                    updatePlayer(p.id, { face_url: e.target.value });
+                                    setIsDirty({ ...isDirty, players: true });
+                                  }}
+                                  placeholder="Ex: pic_plr_face.jpg" 
+                                  className="block w-full bg-transparent text-xs text-neutral-400 outline-none border-b border-neutral-800 focus:border-gold/30 pb-1 transition-all font-mono" 
+                                />
+                              </div>
                             </div>
                           </div>
 
@@ -619,14 +618,22 @@ Regras:
                                   <input type="file" className="hidden" accept="image/*" onChange={async (e) => {
                                     const file = e.target.files?.[0];
                                     if (!file) return;
-                                    const fileName = `pic_plr_${slugify(p.char_name || 'unknown')}_body.jpg`;
-                                    const path = await handleFileUpload(file, fileName, p.body_url);
+                                    const path = await handleFileUpload(file);
                                     updatePlayer(p.id, { body_url: path });
                                     setIsDirty({ ...isDirty, players: true });
                                   }}/>
                                   <Upload size={24} className="text-gold" />
                                 </label>
                               </div>
+                              <input 
+                                value={p.body_url || ''} 
+                                onChange={(e) => {
+                                  updatePlayer(p.id, { body_url: e.target.value });
+                                  setIsDirty({ ...isDirty, players: true });
+                                }}
+                                placeholder="Ex: pic_plr_body.jpg" 
+                                className="w-full md:w-32 bg-neutral-900/50 border border-neutral-700/50 focus:border-gold outline-none px-2 py-1 text-neutral-300 text-[10px] rounded font-mono mt-1"
+                              />
                               <p className="text-[8px] text-neutral-600 font-medium text-center">Portrait: 2:3</p>
                             </div>
 
@@ -838,7 +845,7 @@ Regras:
              }}
              onClose={() => setEditingChapter(null)}
              onGeneratePrompt={handleGeneratePrompt}
-             onUploadImage={async (file, cap) => await handleFileUpload(file, `pic_chr${id?.slice(0,4)}_cap${cap.id.slice(0,4)}.jpg`, cap.image_url)}
+             onUploadImage={async (file) => await handleFileUpload(file)}
            />
         )}
         {showPromptModal && (

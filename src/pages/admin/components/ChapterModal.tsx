@@ -97,6 +97,15 @@ export function ChapterModal({ chapter: initialChapter, chronicleId, onSave, onC
                   </label>
                 )}
               </div>
+              <div className="mt-2">
+                <label className="text-[9px] text-gold/40 font-bold uppercase tracking-widest block mb-1">Nome do Arquivo Físico</label>
+                <input 
+                  value={chapter.image_url || ''}
+                  onChange={(e) => setChapter({ ...chapter, image_url: e.target.value })}
+                  placeholder="Ex: dia001_cap001_tempestade.png"
+                  className="w-full bg-neutral-900/50 text-parchment font-cinzel text-xs border border-neutral-700/80 focus:border-gold outline-none p-2.5 rounded transition-all"
+                />
+              </div>
             </div>
           </div>
 
