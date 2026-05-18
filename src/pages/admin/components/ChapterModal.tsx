@@ -16,16 +16,28 @@ interface Props {
 export function ChapterModal({ chapter: initialChapter, chronicleId, onSave, onClose, onGeneratePrompt, onUploadImage }: Props) {
   const [chapter, setChapter] = useState<Chapter>(initialChapter);
   const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [uploadTimestamp, setUploadTimestamp] = useState<number>(Date.now());
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    // Validar limite de 5MB
+    if (file.size > 5 * 1024 * 1024) {
+      setError("O arquivo é muito grande. O limite máximo permitido é 5MB.");
+      return;
+    }
+
     setUploading(true);
+    setError(null);
     try {
       const path = await onUploadImage(file, chapter);
       setChapter(prev => ({ ...prev, image_url: path }));
-    } catch (err) {
+      setUploadTimestamp(Date.now());
+    } catch (err: any) {
       console.error(err);
+      setError(`Erro ao enviar imagem: Falha no upload. Detalhes técnicos: ${err?.message || JSON.stringify(err)}`);
     } finally {
       setUploading(false);
     }
@@ -66,14 +78,17 @@ export function ChapterModal({ chapter: initialChapter, chronicleId, onSave, onC
             </div>
 
             <div className="space-y-3">
-              <label className="text-[10px] text-gold/60 font-bold uppercase tracking-widest block">Ilustração do Capítulo</label>
+              <div className="flex justify-between items-center">
+                <label className="text-[10px] text-gold/60 font-bold uppercase tracking-widest block">Ilustração do Capítulo</label>
+                <span className="text-[9px] text-gold/40 font-bold uppercase tracking-widest">Recomendado: 1200x675px (16:9) | Máx: 5MB</span>
+              </div>
               <div className="aspect-video w-full bg-neutral-900 rounded border border-neutral-700 flex items-center justify-center overflow-hidden relative group/img shadow-2xl">
                 {uploading ? (
                   <span className="text-gold animate-pulse text-sm">Enviando imagem...</span>
                 ) : chapter.image_url ? (
                   <img 
-                    src={`${getStorageUrl(chapter.image_url)}?t=${Date.now()}`} 
-                    key={chapter.image_url}
+                    src={`${getStorageUrl(chapter.image_url)}?t=${uploadTimestamp}`} 
+                    key={`${chapter.image_url}-${uploadTimestamp}`}
                     className="w-full h-full object-cover opacity-80 group-hover/img:opacity-100 transition-opacity" 
                   />
                 ) : (
@@ -93,10 +108,16 @@ export function ChapterModal({ chapter: initialChapter, chronicleId, onSave, onC
                     />
                     <Upload className="text-gold mb-2" size={32} />
                     <span className="text-xs font-bold text-white uppercase tracking-widest">Fazer Upload</span>
-                    <p className="text-[10px] text-gold/60 mt-1">AR 16:9 (1920x1080px)</p>
+                    <p className="text-[10px] text-gold/60 mt-1">1200x675px (16:9) | Limite 5MB</p>
                   </label>
                 )}
               </div>
+              {error && (
+                <div className="p-3 bg-red-950/50 border border-red-500/40 text-red-400 text-[11px] leading-relaxed rounded font-mono break-words">
+                  <p className="font-bold mb-1 uppercase tracking-wider text-[10px]">⚠️ Falha no Envio</p>
+                  <p>{error}</p>
+                </div>
+              )}
               <div className="mt-2">
                 <label className="text-[9px] text-gold/40 font-bold uppercase tracking-widest block mb-1">Nome do Arquivo Físico</label>
                 <input 
