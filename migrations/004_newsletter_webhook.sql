@@ -16,7 +16,7 @@ BEGIN
   IF (NEW.is_published = true AND (OLD.is_published = false OR OLD.is_published IS NULL)) THEN
     PERFORM
       extensions.http_post(
-        'https://utgwqhorbbsmhgilyaub.supabase.co/functions/v1/send-new-session-email',
+        'https://kwdweztilsoxxcgudtsz.supabase.co/functions/v1/send-new-session-email',
         jsonb_build_object(
           'type', 'UPDATE',
           'table', 'sessions',
@@ -25,8 +25,8 @@ BEGIN
         )::text,
         'application/json',
         jsonb_build_object(
-          'Authorization', 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0Z3dxaG9yYmJzbWhnaWx5YXViIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU1NjU3MDMsImV4cCI6MjA5MTE0MTcwM30.Tmbf5GkndZ6uuT1w5byxHl9u5zLFzHjLAKtiDA1E_3U',
-          'apikey', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0Z3dxaG9yYmJzbWhnaWx5YXViIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU1NjU3MDMsImV4cCI6MjA5MTE0MTcwM30.Tmbf5GkndZ6uuT1w5byxHl9u5zLFzHjLAKtiDA1E_3U'
+          'Authorization', 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt3ZHdlenRpbHNveHhjZ3VkdHN6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQxMzI2NzcsImV4cCI6MjA1OTcwODY3N30.IJY1Ol_xmL7Y-GJMqjuCCglDq9H-K4RhxxZK0pqKDMo',
+          'apikey', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt3ZHdlenRpbHNveHhjZ3VkdHN6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQxMzI2NzcsImV4cCI6MjA1OTcwODY3N30.IJY1Ol_xmL7Y-GJMqjuCCglDq9H-K4RhxxZK0pqKDMo'
         )::text
       );
   END IF;
