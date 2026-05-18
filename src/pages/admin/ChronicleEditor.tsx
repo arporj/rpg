@@ -80,10 +80,43 @@ export default function ChronicleEditor() {
   }
 
   // --- Upload Logic ---
-  const handleFileUpload = async (file: File) => {
-    // Não gravamos no Supabase Storage. Apenas retornamos o nome do arquivo selecionado
-    // para ser gravado no banco de dados, pois as imagens são físicas.
-    return file.name;
+  const STORAGE_BUCKET = 'media';
+
+  const handleChapterFileUpload = async (file: File, chapter: Chapter, sessionId: string): Promise<string> => {
+    const ext = file.name.split('.').pop()?.toLowerCase() || 'png';
+    const session = sessions.find((s: Session) => s.id === sessionId);
+    const sessionNum = (session?.order_index !== undefined ? session.order_index + 1 : 1);
+    const sessionStr = `dia${String(sessionNum).padStart(3, '0')}`;
+    
+    const capNum = (chapter.order_index !== undefined ? chapter.order_index + 1 : 1);
+    const capStr = `cap${String(capNum).padStart(3, '0')}`;
+    
+    const titleSlug = slugify(chapter.title || 'capitulo');
+    const path = `codex/${sessionStr}/${capStr}_${titleSlug}.${ext}`;
+    
+    const { error } = await supabase.storage
+      .from(STORAGE_BUCKET)
+      .upload(path, file, { upsert: true });
+
+    if (error) {
+      throw error;
+    }
+    return path;
+  };
+
+  const handlePlayerFileUpload = async (file: File, player: Player, type: 'face' | 'body'): Promise<string> => {
+    const ext = file.name.split('.').pop()?.toLowerCase() || 'png';
+    const nameSlug = slugify(player.char_name || 'personagem');
+    const path = `codex/players/${nameSlug}_${type}.${ext}`;
+    
+    const { error } = await supabase.storage
+      .from(STORAGE_BUCKET)
+      .upload(path, file, { upsert: true });
+
+    if (error) {
+      throw error;
+    }
+    return path;
   };
 
   const handleGeneratePrompt = async (chapter: any) => {
@@ -550,12 +583,16 @@ Regras:
                                 )}
                               </div>
                               <label className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover/avatar:opacity-100 cursor-pointer transition-opacity rounded-full">
-                                <input type="file" className="hidden" accept="image/*" onChange={async (e) => {
+                                <input type="file" className="hidden" accept="image/*" onChange={async (e: React.ChangeEvent<HTMLInputElement>) => {
                                   const file = e.target.files?.[0];
                                   if (!file) return;
-                                  const path = await handleFileUpload(file);
-                                  updatePlayer(p.id, { face_url: path });
-                                  setIsDirty({ ...isDirty, players: true });
+                                  try {
+                                    const path = await handlePlayerFileUpload(file, p, 'face');
+                                    updatePlayer(p.id, { face_url: path });
+                                    setIsDirty(prev => ({ ...prev, players: true }));
+                                  } catch (err) {
+                                    console.error('Erro no upload do rosto:', err);
+                                  }
                                 }}/>
                                 <Upload size={20} className="text-gold" />
                               </label>
@@ -615,12 +652,16 @@ Regras:
                                   <div className="w-full h-full flex items-center justify-center opacity-20"><UserCheck size={32}/></div>
                                 )}
                                 <label className="absolute inset-0 bg-black/80 flex items-center justify-center opacity-0 group-hover/body:opacity-100 cursor-pointer transition-opacity">
-                                  <input type="file" className="hidden" accept="image/*" onChange={async (e) => {
+                                  <input type="file" className="hidden" accept="image/*" onChange={async (e: React.ChangeEvent<HTMLInputElement>) => {
                                     const file = e.target.files?.[0];
                                     if (!file) return;
-                                    const path = await handleFileUpload(file);
-                                    updatePlayer(p.id, { body_url: path });
-                                    setIsDirty({ ...isDirty, players: true });
+                                    try {
+                                      const path = await handlePlayerFileUpload(file, p, 'body');
+                                      updatePlayer(p.id, { body_url: path });
+                                      setIsDirty(prev => ({ ...prev, players: true }));
+                                    } catch (err) {
+                                      console.error('Erro no upload do corpo:', err);
+                                    }
                                   }}/>
                                   <Upload size={24} className="text-gold" />
                                 </label>
@@ -845,7 +886,7 @@ Regras:
              }}
              onClose={() => setEditingChapter(null)}
              onGeneratePrompt={handleGeneratePrompt}
-             onUploadImage={async (file) => await handleFileUpload(file)}
+             onUploadImage={async (file, cap) => await handleChapterFileUpload(file, cap, editingChapter.sessionId)}
            />
         )}
         {showPromptModal && (
