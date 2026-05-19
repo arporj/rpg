@@ -123,26 +123,49 @@ serve(async (req) => {
     }
 
     const htmlContent = `
-      <div style="font-family: 'Times New Roman', serif; max-width: 600px; margin: 0 auto; background-color: #050505; color: #f4ebd8; padding: 40px; border: 1px solid #d4af37;">
-        <div style="text-align: center; margin-bottom: 30px;">
-          <h1 style="color: #d4af37; text-transform: uppercase; letter-spacing: 2px;">O Tomo das Aventuras</h1>
-          <hr style="border: 0; border-bottom: 1px solid rgba(212, 175, 55, 0.3); margin: 20px 0;" />
+      <div style="background-color: #161311; color: #f4ebd8; font-family: Georgia, serif; max-width: 600px; margin: 0 auto; padding: 50px 40px; border: 1px solid #d4af37; box-sizing: border-box; text-align: center;">
+        <!-- Cabeçalho -->
+        <div style="margin-bottom: 40px;">
+          <h2 style="color: #d4af37; text-transform: uppercase; letter-spacing: 4px; font-size: 16px; font-weight: normal; margin: 0 0 15px 0;">O Tomo das Aventuras</h2>
+          <div style="width: 40px; height: 1px; background-color: #d4af37; margin: 0 auto;"></div>
         </div>
-        
-        <p style="font-size: 18px; line-height: 1.6;">Saudações Aventureiro,</p>
-        <p style="font-size: 18px; line-height: 1.6;">Uma nova sessão foi publicada nas páginas do códice. A história <strong>${adventureTitle}</strong> revela agora os mistérios de <em>${sessionTitle}</em>.</p>
-        
-        <div style="text-align: center; margin: 40px 0;">
-          <a href="${sessionLink}" style="display: inline-block; padding: 12px 24px; background-color: rgba(212, 175, 55, 0.1); border: 1px solid #d4af37; color: #d4af37; text-decoration: none; text-transform: uppercase; letter-spacing: 2px; font-size: 14px; font-weight: bold;">
+
+        <!-- Título da Aventura -->
+        <h1 style="color: #d4af37; text-transform: uppercase; letter-spacing: 2px; font-size: 26px; font-weight: bold; margin: 0 0 10px 0; line-height: 1.3;">
+          \${adventureTitle}
+        </h1>
+
+        <!-- Nome da Sessão -->
+        <p style="font-style: italic; color: #d4af37; font-size: 18px; margin: 0 0 40px 0; letter-spacing: 1px;">
+          — \${sessionTitle} —
+        </p>
+
+        <!-- Saudação e Texto Principal -->
+        <div style="font-size: 16px; line-height: 1.8; color: #e2d7c5; margin-bottom: 40px; text-align: center;">
+          <p style="margin: 0 0 20px 0; font-weight: bold; letter-spacing: 0.5px;">Saudações, aventureiro.</p>
+          <p style="margin: 0 0 20px 0;">Uma nova sessão foi registrada nos pergaminhos do códice. Prepare sua mente e seus dados, pois novos mistérios e perigos aguardam sua leitura.</p>
+        </div>
+
+        <!-- Botão de Ação (Outline Dourado) -->
+        <div style="margin-bottom: 50px;">
+          <a href="\${sessionLink}" style="display: inline-block; padding: 15px 35px; background-color: transparent; border: 1px solid #d4af37; color: #d4af37; text-decoration: none; text-transform: uppercase; letter-spacing: 3px; font-size: 13px; font-weight: bold;">
             Ler Nova Sessão
           </a>
         </div>
+
+        <!-- Linha divisória antes do rodapé -->
+        <div style="width: 100%; height: 1px; background-color: rgba(212, 175, 55, 0.2); margin: 0 auto 30px auto;"></div>
+
+        <!-- Rodapé -->
+        <div style="font-size: 11px; letter-spacing: 2px; color: #d4af37; text-transform: uppercase; margin-bottom: 15px; font-weight: bold;">
+          Que os dados rolem ao seu favor
+        </div>
         
-        <hr style="border: 0; border-bottom: 1px solid rgba(212, 175, 55, 0.3); margin: 30px 0;" />
-        <p style="text-align: center; font-size: 14px; color: rgba(244, 235, 216, 0.6); font-style: italic;">
-          Que os dados rolem ao seu favor.<br>
-          <a href="https://rpg.andreric.com/codex" style="color: #d4af37; text-decoration: underline;">Voltar ao Tomo das Aventuras</a>
-        </p>
+        <div>
+          <a href="https://rpg.andreric.com/codex" style="color: #a89475; text-decoration: underline; font-size: 13px; letter-spacing: 0.5px;">
+            Ir para a página inicial
+          </a>
+        </div>
       </div>
     `;
 
