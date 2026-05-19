@@ -42,9 +42,28 @@ export default function NewsletterManager() {
   const [notifying, setNotifying] = useState(false);
   const navigate = useNavigate();
 
+  const checkSession = async (): Promise<boolean> => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      navigate('/admin', { 
+        state: { 
+          message: 'Sua sessão expirou. Por favor, faça login novamente para continuar.' 
+        } 
+      });
+      return false;
+    }
+    return true;
+  };
+
   useEffect(() => {
-    fetchSubscribers();
-    fetchSessions();
+    async function init() {
+      const active = await checkSession();
+      if (active) {
+        fetchSubscribers();
+        fetchSessions();
+      }
+    }
+    init();
   }, []);
 
   async function fetchSessions() {
@@ -104,6 +123,7 @@ export default function NewsletterManager() {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!(await checkSession())) return;
     setSaving(true);
 
     const payload = {
@@ -156,6 +176,7 @@ export default function NewsletterManager() {
   };
 
   const handleDelete = async (id: string) => {
+    if (!(await checkSession())) return;
     if (!confirm('Tem certeza que deseja remover este inscrito?')) return;
 
     const { error } = await supabase
@@ -175,6 +196,7 @@ export default function NewsletterManager() {
 
   const handleSendManualNotification = async () => {
     if (!notifyingSubscriber || !selectedSessionId) return;
+    if (!(await checkSession())) return;
     
     setNotifying(true);
     try {
