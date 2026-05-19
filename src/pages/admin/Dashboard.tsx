@@ -71,7 +71,9 @@ export default function Dashboard() {
         </div>
         <div className="flex items-center gap-6">
           <button 
-            onClick={() => navigate('/admin/newsletter')}
+            onClick={async () => {
+              if (await checkSession()) navigate('/admin/newsletter');
+            }}
             className="flex items-center gap-2 text-gold hover:text-yellow-400 transition-colors font-bold uppercase text-xs tracking-widest"
           >
             <Mail className="w-4 h-4" />
@@ -95,6 +97,12 @@ export default function Dashboard() {
           </div>
           <div className="flex gap-4">
             <button 
+              onClick={async () => {
+                if (await checkSession()) {
+                  // Aqui no futuro poderá ter um modal ou nova rota
+                  alert('A criação de novas crônicas ainda está em desenvolvimento pelo Tomo!');
+                }
+              }}
               className="bg-gold text-ink font-bold px-6 py-3 rounded-full flex items-center gap-2 hover:bg-yellow-500 transition-all shadow-lg hover:scale-105"
             >
               <Plus className="w-5 h-5" />
@@ -129,7 +137,9 @@ export default function Dashboard() {
 
                  <div className="grid grid-cols-2 gap-4">
                     <button 
-                      onClick={() => navigate(`/admin/chronicle/${chronicle.id}`)}
+                      onClick={async () => {
+                        if (await checkSession()) navigate(`/admin/chronicle/${chronicle.id}`);
+                      }}
                       className="bg-neutral-800 hover:bg-neutral-700 p-2 rounded flex items-center justify-center gap-2 text-sm transition-colors"
                     >
                       <Settings className="w-4 h-4" />

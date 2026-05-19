@@ -106,7 +106,8 @@ export default function NewsletterManager() {
     setLoading(false);
   }
 
-  const handleOpenModal = (sub: Subscriber | null = null) => {
+  const handleOpenModal = async (sub: Subscriber | null = null) => {
+    if (!(await checkSession())) return;
     if (sub) {
       setEditingSubscriber(sub);
       setEmailInput(sub.email);
@@ -189,7 +190,8 @@ export default function NewsletterManager() {
     }
   };
 
-  const handleOpenNotifyModal = (sub: Subscriber) => {
+  const handleOpenNotifyModal = async (sub: Subscriber) => {
+    if (!(await checkSession())) return;
     setNotifyingSubscriber(sub);
     setIsNotifyModalOpen(true);
   };

@@ -52,8 +52,37 @@ export default function ChronicleEditor() {
   const [playersTimestamp, setPlayersTimestamp] = useState<number>(Date.now());
   const [playerUploadError, setPlayerUploadError] = useState<{ playerId: string; type: 'face' | 'body'; message: string } | null>(null);
 
+  const checkSession = async (): Promise<boolean> => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      navigate('/admin', { 
+        state: { 
+          message: 'Sua sessão expirou. Por favor, faça login novamente para continuar.' 
+        } 
+      });
+      return false;
+    }
+    return true;
+  };
+
+  const handleOpenEditSession = async (session: Session) => {
+    if (!(await checkSession())) return;
+    setEditingSession(session);
+  };
+
+  const handleOpenEditChapter = async (chapter: Chapter, sessionId: string) => {
+    if (!(await checkSession())) return;
+    setEditingChapter({ chapter, sessionId });
+  };
+
   useEffect(() => {
-    if (id) fetchData();
+    async function init() {
+      const active = await checkSession();
+      if (active && id) {
+        fetchData();
+      }
+    }
+    init();
   }, [id]);
 
   async function fetchData() {
@@ -85,6 +114,9 @@ export default function ChronicleEditor() {
   const STORAGE_BUCKET = 'media';
 
   const handleChapterFileUpload = async (file: File, chapter: Chapter, sessionId: string): Promise<string> => {
+    if (!(await checkSession())) {
+      throw new Error('Sessão expirada. Por favor, faça login novamente.');
+    }
     const ext = file.name.split('.').pop()?.toLowerCase() || 'png';
     const session = sessions.find((s: Session) => s.id === sessionId);
     const sessionNum = (session?.order_index !== undefined ? session.order_index + 1 : 1);
@@ -107,6 +139,9 @@ export default function ChronicleEditor() {
   };
 
   const handlePlayerFileUpload = async (file: File, player: Player, type: 'face' | 'body'): Promise<string> => {
+    if (!(await checkSession())) {
+      throw new Error('Sessão expirada. Por favor, faça login novamente.');
+    }
     const ext = file.name.split('.').pop()?.toLowerCase() || 'png';
     const nameSlug = slugify(player.char_name || 'personagem');
     const path = `codex/players/${nameSlug}_${type}.${ext}`;
@@ -122,6 +157,7 @@ export default function ChronicleEditor() {
   };
 
   const handleGeneratePrompt = async (chapter: any) => {
+    if (!(await checkSession())) return;
     const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
     
     if (!apiKey) {
@@ -190,10 +226,17 @@ Regras:
   };
 
   const togglePublish = async (session: Session) => {
+    if (!(await checkSession())) return;
     const newStatus = !session.is_published;
     if (confirm(newStatus ? 'Publicar esta sessão para todos?' : 'Remover publicação (Torna invisível)?')) {
-      await supabase.from('sessions').update({ is_published: newStatus }).eq('id', session.id);
-      setSessions(sessions.map(s => s.id === session.id ? { ...s, is_published: newStatus } : s));
+      try {
+        const { error } = await supabase.from('sessions').update({ is_published: newStatus }).eq('id', session.id);
+        if (error) throw error;
+        setSessions(sessions.map(s => s.id === session.id ? { ...s, is_published: newStatus } : s));
+      } catch (err: any) {
+        console.error('Toggle publish error:', err);
+        alert(`Erro ao alterar publicação.\nErro técnico: ${err.message || err.code || 'Desconhecido'}\nDetalhes: ${JSON.stringify(err)}`);
+      }
     }
   };
 
@@ -216,45 +259,52 @@ Regras:
 
   const saveSessions = async () => {
     if (!id) return;
+    if (!(await checkSession())) return;
     setSaving(true);
     setSaveStatus('saving');
     try {
       for (const session of sessions) {
-        await supabase.from('sessions').update({
+        const { error: sessionError } = await supabase.from('sessions').update({
           title: session.title,
           date_str: session.date_str,
           order_index: session.order_index,
           session_date: session.session_date
         }).eq('id', session.id);
 
+        if (sessionError) throw sessionError;
+
         if (session.chapters) {
           for (const chapter of session.chapters) {
-            await supabase.from('chapters').update({
+            const { error: chapterError } = await supabase.from('chapters').update({
               title: chapter.title,
               content: chapter.content,
               image_url: chapter.image_url,
               order_index: chapter.order_index
             }).eq('id', chapter.id);
+
+            if (chapterError) throw chapterError;
           }
         }
       }
       setIsDirty({ ...isDirty, sessions: false });
       setSaveStatus('success');
       setTimeout(() => setSaveStatus('idle'), 3000);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Save sessions error:', err);
       setSaveStatus('error');
+      alert(`Falha ao salvar a jornada.\nErro técnico: ${err.message || err.code || 'Desconhecido'}\nDetalhes: ${JSON.stringify(err)}`);
     }
     setSaving(false);
   };
 
   const savePlayers = async () => {
     if (!id) return;
+    if (!(await checkSession())) return;
     setSaving(true);
     setSaveStatus('saving');
     try {
       for (const player of players) {
-        await supabase.from('players').update({
+        const { error } = await supabase.from('players').update({
           real_name: player.real_name,
           char_name: player.char_name,
           description: player.description,
@@ -265,81 +315,120 @@ Regras:
           class: player.class,
           level_points: player.level_points
         }).eq('id', player.id);
+
+        if (error) throw error;
       }
       setIsDirty({ ...isDirty, players: false });
       setSaveStatus('success');
       setTimeout(() => setSaveStatus('idle'), 3000);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Save players error:', err);
       setSaveStatus('error');
+      alert(`Falha ao salvar os jogadores.\nErro técnico: ${err.message || err.code || 'Desconhecido'}\nDetalhes: ${JSON.stringify(err)}`);
     }
     setSaving(false);
   };
 
   const saveAventura = async () => {
     if (!chronicle || !id) return;
+    if (!(await checkSession())) return;
     setSaving(true);
     setSaveStatus('saving');
     try {
-      await supabase.from('chronicles').update({
+      const { error } = await supabase.from('chronicles').update({
         title: chronicle.title,
         master_name: chronicle.master_name,
         system_id: chronicle.system_id,
         slug: chronicle.slug
       }).eq('id', id);
+
+      if (error) throw error;
+
       setIsDirty({ ...isDirty, aventura: false });
       setSaveStatus('success');
       setTimeout(() => setSaveStatus('idle'), 3000);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Save aventura error:', err);
       setSaveStatus('error');
+      alert(`Falha ao salvar a aventura.\nErro técnico: ${err.message || err.code || 'Desconhecido'}\nDetalhes: ${JSON.stringify(err)}`);
     }
     setSaving(false);
   };
 
   // --- Session Actions ---
   const addSession = async () => {
-    const { data } = await supabase.from('sessions').insert({
-      chronicle_id: id,
-      title: 'Nova Sessão',
-      date_str: 'Dia X',
-      order_index: sessions.length
-    }).select().single();
-    if (data) {
-      setSessions([...sessions, { ...data, chapters: [] }]);
-      setEditingSession({ ...data, chapters: [] });
+    if (!(await checkSession())) return;
+    try {
+      const { data, error } = await supabase.from('sessions').insert({
+        chronicle_id: id,
+        title: 'Nova Sessão',
+        date_str: 'Dia X',
+        order_index: sessions.length
+      }).select().single();
+
+      if (error) throw error;
+
+      if (data) {
+        setSessions([...sessions, { ...data, chapters: [] }]);
+        setEditingSession({ ...data, chapters: [] });
+      }
+    } catch (err: any) {
+      console.error('Erro ao adicionar sessão:', err);
+      alert(`Falha ao criar nova sessão.\nErro técnico: ${err.message || err.code || 'Desconhecido'}\nDetalhes: ${JSON.stringify(err)}`);
     }
   };
 
   const deleteSession = async (sessionId: string) => {
+    if (!(await checkSession())) return;
     if (!confirm('Tem certeza que deseja excluir esta sessão e todos os seus capítulos?')) return;
-    await supabase.from('sessions').delete().eq('id', sessionId);
-    setSessions(sessions.filter(s => s.id !== sessionId));
+    try {
+      const { error } = await supabase.from('sessions').delete().eq('id', sessionId);
+      if (error) throw error;
+      setSessions(sessions.filter(s => s.id !== sessionId));
+    } catch (err: any) {
+      console.error('Delete session error:', err);
+      alert(`Erro ao excluir sessão.\nErro técnico: ${err.message || err.code || 'Desconhecido'}\nDetalhes: ${JSON.stringify(err)}`);
+    }
   };
 
   // --- Chapter Actions ---
   const addChapter = async (sessionId: string) => {
+    if (!(await checkSession())) return;
     const session = sessions.find(s => s.id === sessionId);
     if (!session) return;
     
-    const { data } = await supabase.from('chapters').insert({
-      session_id: sessionId,
-      title: 'Novo Capítulo',
-      content: '',
-      image_url: '',
-      order_index: (session.chapters?.length || 0)
-    }).select().single();
-    
-    if (data) {
-      setSessions(sessions.map(s => s.id === sessionId ? { ...s, chapters: [...(s.chapters || []), data].sort((a: Chapter, b: Chapter) => a.order_index - b.order_index) } : s));
-      setEditingChapter({ chapter: data, sessionId });
+    try {
+      const { data, error } = await supabase.from('chapters').insert({
+        session_id: sessionId,
+        title: 'Novo Capítulo',
+        content: '',
+        image_url: '',
+        order_index: (session.chapters?.length || 0)
+      }).select().single();
+
+      if (error) throw error;
+      
+      if (data) {
+        setSessions(sessions.map(s => s.id === sessionId ? { ...s, chapters: [...(s.chapters || []), data].sort((a: Chapter, b: Chapter) => a.order_index - b.order_index) } : s));
+        setEditingChapter({ chapter: data, sessionId });
+      }
+    } catch (err: any) {
+      console.error('Add chapter error:', err);
+      alert(`Falha ao adicionar capítulo.\nErro técnico: ${err.message || err.code || 'Desconhecido'}\nDetalhes: ${JSON.stringify(err)}`);
     }
   };
 
   const deleteChapter = async (sessionId: string, chapterId: string) => {
+    if (!(await checkSession())) return;
     if (!confirm('Excluir este capítulo?')) return;
-    await supabase.from('chapters').delete().eq('id', chapterId);
-    setSessions(sessions.map(s => s.id === sessionId ? { ...s, chapters: s.chapters?.filter(c => c.id !== chapterId) } : s));
+    try {
+      const { error } = await supabase.from('chapters').delete().eq('id', chapterId);
+      if (error) throw error;
+      setSessions(sessions.map(s => s.id === sessionId ? { ...s, chapters: s.chapters?.filter(c => c.id !== chapterId) } : s));
+    } catch (err: any) {
+      console.error('Delete chapter error:', err);
+      alert(`Erro ao excluir capítulo.\nErro técnico: ${err.message || err.code || 'Desconhecido'}\nDetalhes: ${JSON.stringify(err)}`);
+    }
   };
 
   const moveChapter = (sessionId: string, chapterId: string, direction: 'up' | 'down') => {
@@ -363,20 +452,36 @@ Regras:
 
   // --- Player Actions ---
   const addPlayer = async () => {
-    const { data } = await supabase.from('players').insert({
-      chronicle_id: id,
-      real_name: 'Novo Jogador',
-      char_name: 'Novo Personagem',
-      description: '',
-      is_active: true
-    }).select().single();
-    if (data) setPlayers([...players, data]);
+    if (!(await checkSession())) return;
+    try {
+      const { data, error } = await supabase.from('players').insert({
+        chronicle_id: id,
+        real_name: 'Novo Jogador',
+        char_name: 'Novo Personagem',
+        description: '',
+        is_active: true
+      }).select().single();
+
+      if (error) throw error;
+
+      if (data) setPlayers([...players, data]);
+    } catch (err: any) {
+      console.error('Add player error:', err);
+      alert(`Falha ao adicionar jogador.\nErro técnico: ${err.message || err.code || 'Desconhecido'}\nDetalhes: ${JSON.stringify(err)}`);
+    }
   };
 
   const deletePlayer = async (playerId: string) => {
+    if (!(await checkSession())) return;
     if (!confirm('Remover este jogador?')) return;
-    await supabase.from('players').delete().eq('id', playerId);
-    setPlayers(players.filter(p => p.id !== playerId));
+    try {
+      const { error } = await supabase.from('players').delete().eq('id', playerId);
+      if (error) throw error;
+      setPlayers(players.filter(p => p.id !== playerId));
+    } catch (err: any) {
+      console.error('Delete player error:', err);
+      alert(`Erro ao excluir jogador.\nErro técnico: ${err.message || err.code || 'Desconhecido'}\nDetalhes: ${JSON.stringify(err)}`);
+    }
   };
 
   const updatePlayer = (playerId: string, updates: Partial<Player>) => {
@@ -485,7 +590,7 @@ Regras:
                            <button onClick={() => togglePublish(session)} className={`px-4 py-2 rounded-sm text-xs uppercase font-bold border transition-colors ${session.is_published ? 'bg-neutral-800 border-neutral-700 text-neutral-400 hover:text-white' : 'bg-green-600/20 text-green-500 border-green-600/30 hover:bg-green-600/30'}`}>
                              {session.is_published ? 'Despublicar' : 'Publicar'}
                            </button>
-                           <button onClick={() => setEditingSession(session)} className="px-4 py-2 bg-neutral-800 hover:bg-neutral-700 text-white rounded-sm text-xs font-bold uppercase transition-colors">Editar</button>
+                           <button onClick={() => handleOpenEditSession(session)} className="px-4 py-2 bg-neutral-800 hover:bg-neutral-700 text-white rounded-sm text-xs font-bold uppercase transition-colors">Editar</button>
                            <button onClick={() => deleteSession(session.id)} className="p-2 text-red-900 hover:text-red-500 transition-colors bg-red-900/10 rounded-sm">
                              <Trash2 size={16} />
                            </button>
@@ -520,7 +625,7 @@ Regras:
                                         {chapter.image_url && <ImageIcon size={14} className="text-gold/40"/>}
                                      </div>
                                      <div className="flex gap-2">
-                                        <button onClick={() => setEditingChapter({chapter, sessionId: session.id})} className="text-xs text-gold/60 hover:text-gold uppercase font-bold px-3 py-1 bg-gold/5 rounded">Editar</button>
+                                        <button onClick={() => handleOpenEditChapter(chapter, session.id)} className="text-xs text-gold/60 hover:text-gold uppercase font-bold px-3 py-1 bg-gold/5 rounded">Editar</button>
                                         <button onClick={() => deleteChapter(session.id, chapter.id)} className="text-red-900 hover:text-red-500 p-1"><Trash2 size={14}/></button>
                                      </div>
                                    </div>
@@ -904,6 +1009,7 @@ Regras:
             key="session-modal"
             session={editingSession} 
             onSave={async (updated) => {
+              if (!(await checkSession())) return;
               setSaving(true);
               const { error } = await supabase.from('sessions').update({
                 title: updated.title,
@@ -926,6 +1032,7 @@ Regras:
              chapter={editingChapter.chapter}
              chronicleId={id || ''}
              onSave={async (updated) => {
+               if (!(await checkSession())) return;
                setSaving(true);
                const { error } = await supabase.from('chapters').update({
                  title: updated.title,
