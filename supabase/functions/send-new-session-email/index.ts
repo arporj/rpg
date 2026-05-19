@@ -135,12 +135,12 @@ serve(async (req) => {
 
               <!-- Título da Aventura -->
               <h1 style="color: #d47a20; text-transform: uppercase; letter-spacing: 2px; font-size: 28px; font-weight: bold; margin: 0 0 15px 0; line-height: 1.3;">
-                \${adventureTitle}
+                ${adventureTitle}
               </h1>
 
               <!-- Nome da Sessão -->
               <p style="font-style: italic; color: #a8967a; font-size: 18px; margin: 0 0 45px 0; letter-spacing: 1px;">
-                — \${sessionTitle} —
+                — ${sessionTitle} —
               </p>
 
               <!-- Saudação e Texto Principal -->
@@ -152,7 +152,7 @@ serve(async (req) => {
 
               <!-- Botão de Ação (Outline Dourado/Laranja) -->
               <div style="margin-bottom: 50px;">
-                <a href="\${sessionLink}" style="display: inline-block; padding: 15px 35px; background-color: transparent; border: 1px solid #d47a20; color: #d47a20; text-decoration: none; text-transform: uppercase; letter-spacing: 3px; font-size: 13px; font-weight: bold;">
+                <a href="${sessionLink}" style="display: inline-block; padding: 15px 35px; background-color: transparent; border: 1px solid #d47a20; color: #d47a20; text-decoration: none; text-transform: uppercase; letter-spacing: 3px; font-size: 13px; font-weight: bold;">
                   Ler Nova Sessão
                 </a>
               </div>
