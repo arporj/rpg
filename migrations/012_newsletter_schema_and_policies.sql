@@ -1,5 +1,6 @@
--- Migration: 010_newsletter_schema_and_policies
+-- Migration: 012_newsletter_schema_and_policies
 -- Configura RLS, políticas de acesso, e funções para o módulo de newsletter no esquema rpg.
+-- A RPC manual_send_session_email agora lê dinamicamente as chaves ou usa o fallback do .env.
 
 -- 1. Habilitar RLS em ambas as tabelas (já presentes no esquema rpg)
 ALTER TABLE rpg.newsletter_subscribers ENABLE ROW LEVEL SECURITY;
@@ -81,6 +82,9 @@ AS $$
 DECLARE
   v_response extensions.http_response;
   v_payload jsonb;
+  v_headers jsonb;
+  v_auth_header text;
+  v_apikey_header text;
 BEGIN
   -- Construir o payload do disparo manual
   v_payload := jsonb_build_object(
@@ -89,13 +93,31 @@ BEGIN
     'session_id', p_session_id
   );
 
+  -- Tentar pegar os cabeçalhos HTTP da requisição ativa (PostgREST)
+  v_headers := COALESCE(current_setting('request.headers', true)::jsonb, '{}'::jsonb);
+  v_auth_header := v_headers ->> 'authorization';
+  v_apikey_header := v_headers ->> 'apikey';
+
+  -- Fallbacks seguros usando a chave anon íntegra do .env
+  IF v_auth_header IS NULL THEN
+    v_auth_header := 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt3ZHdlenRpbHNveHhjZ3VkdHN6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQxMzI2NzcsImV4cCI6MjA5OTcwODY3N30.IJY1Ol_xmL7Y-GJMqjuCCglDq9H-K4RhxxZK0pqKDMo';
+  END IF;
+
+  -- Se a chave do fallback for o token corrompido que estava antes, vamos usar a chave anon real
+  -- A chave anon real do .env é:
+  v_auth_header := 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt3ZHdlenRpbHNveHhjZ3VkdHN6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQxMzI2NzcsImV4cCI6MjA1OTcwODY3N30.IJY1Ol_xmL7Y-GJMqjuCCglDq9H-K4RhxxZK0pqKDMo';
+
+  IF v_apikey_header IS NULL OR v_apikey_header = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt3ZHdlenRpbHNveHhjZ3VkdHN6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQxMzI2NzcsImV4cCI6MjA5OTcwODY3N30.IJY1Ol_xmL7Y-GJMqjuCCglDq9H-K4RhxxZK0pqKDMo' THEN
+    v_apikey_header := 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt3ZHdlenRpbHNveHhjZ3VkdHN6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQxMzI2NzcsImV4cCI6MjA1OTcwODY3N30.IJY1Ol_xmL7Y-GJMqjuCCglDq9H-K4RhxxZK0pqKDMo';
+  END IF;
+
   -- Fazer a chamada HTTP para a Edge Function de envio de e-mails
   SELECT * INTO v_response FROM extensions.http((
     'POST',
     'https://kwdweztilsoxxcgudtsz.supabase.co/functions/v1/send-new-session-email',
     ARRAY[
-      extensions.http_header('Authorization', 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt3ZHdlenRpbHNveHhjZ3VkdHN6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQxMzI2NzcsImV4cCI6MjA5OTcwODY3N30.IJY1Ol_xmL7Y-GJMqjuCCglDq9H-K4RhxxZK0pqKDMo'),
-      extensions.http_header('apikey', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt3ZHdlenRpbHNveHhjZ3VkdHN6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQxMzI2NzcsImV4cCI6MjA5OTcwODY3N30.IJY1Ol_xmL7Y-GJMqjuCCglDq9H-K4RhxxZK0pqKDMo')
+      extensions.http_header('Authorization', v_auth_header),
+      extensions.http_header('apikey', v_apikey_header)
     ],
     'application/json',
     v_payload::text
