@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { supabase } from '../../lib/supabase';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Lock, LogIn } from 'lucide-react';
 
 export default function Login() {
@@ -9,11 +9,14 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
+  const location = useLocation();
+  const [infoMessage, setInfoMessage] = useState<string | null>(location.state?.message || null);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
+    setInfoMessage(null);
 
     const { error: loginError } = await supabase.auth.signInWithPassword({
       email,
@@ -33,6 +36,11 @@ export default function Login() {
   return (
     <div className="min-h-screen bg-ink flex items-center justify-center p-4">
       <div className="bg-parchment p-8 rounded-sm shadow-2xl max-w-sm w-full border border-gold/20">
+        {infoMessage && (
+          <div className="mb-6 p-4 bg-amber-100 border border-amber-300 rounded text-amber-900 text-sm font-medium text-center shadow-sm">
+            {infoMessage}
+          </div>
+        )}
         <div className="text-center mb-8">
           <Lock className="w-12 h-12 text-gold mx-auto mb-2" />
           <h1 className="text-3xl font-cinzel text-ink uppercase tracking-widest">Acesso Mestre</h1>
