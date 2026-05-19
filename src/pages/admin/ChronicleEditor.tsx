@@ -51,6 +51,40 @@ export default function ChronicleEditor() {
   const [expandedSessions, setExpandedSessions] = useState<string[]>([]);
   const [playersTimestamp, setPlayersTimestamp] = useState<number>(Date.now());
   const [playerUploadError, setPlayerUploadError] = useState<{ playerId: string; type: 'face' | 'body'; message: string } | null>(null);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+
+  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
+    setToast({ message, type });
+  };
+
+  useEffect(() => {
+    if (toast) {
+      const timer = setTimeout(() => setToast(null), 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [toast]);
+
+  const handleAuthOrTechnicalError = (err: any, fallbackMessage: string) => {
+    console.error(fallbackMessage, err);
+    const isAuthError = 
+      err?.message?.includes("JWT") || 
+      err?.code === "PGRST301" || 
+      err?.status === 401 || 
+      err?.message?.includes("session") || 
+      err?.message?.includes("claims") ||
+      err?.message?.includes("unauthorized") ||
+      err?.message?.toLowerCase().includes("jwt");
+      
+    if (isAuthError) {
+      navigate('/admin', { 
+        state: { 
+          message: 'Sua sessão expirou. Por favor, faça login novamente para continuar.' 
+        } 
+      });
+    } else {
+      showToast(`${fallbackMessage}: ${err.message || 'Erro desconhecido'}`, 'error');
+    }
+  };
 
   const checkSession = async (): Promise<boolean> => {
     const { data: { session } } = await supabase.auth.getSession();
@@ -233,9 +267,9 @@ Regras:
         const { error } = await supabase.from('sessions').update({ is_published: newStatus }).eq('id', session.id);
         if (error) throw error;
         setSessions(sessions.map(s => s.id === session.id ? { ...s, is_published: newStatus } : s));
+        showToast(newStatus ? 'Sessão publicada com sucesso!' : 'Publicação removida com sucesso!');
       } catch (err: any) {
-        console.error('Toggle publish error:', err);
-        alert(`Erro ao alterar publicação.\nErro técnico: ${err.message || err.code || 'Desconhecido'}\nDetalhes: ${JSON.stringify(err)}`);
+        handleAuthOrTechnicalError(err, 'Erro ao alterar publicação');
       }
     }
   };
@@ -288,11 +322,11 @@ Regras:
       }
       setIsDirty({ ...isDirty, sessions: false });
       setSaveStatus('success');
+      showToast('Jornada salva com sucesso!');
       setTimeout(() => setSaveStatus('idle'), 3000);
     } catch (err: any) {
-      console.error('Save sessions error:', err);
       setSaveStatus('error');
-      alert(`Falha ao salvar a jornada.\nErro técnico: ${err.message || err.code || 'Desconhecido'}\nDetalhes: ${JSON.stringify(err)}`);
+      handleAuthOrTechnicalError(err, 'Falha ao salvar a jornada');
     }
     setSaving(false);
   };
@@ -320,11 +354,11 @@ Regras:
       }
       setIsDirty({ ...isDirty, players: false });
       setSaveStatus('success');
+      showToast('Grupo de aventureiros salvo com sucesso!');
       setTimeout(() => setSaveStatus('idle'), 3000);
     } catch (err: any) {
-      console.error('Save players error:', err);
       setSaveStatus('error');
-      alert(`Falha ao salvar os jogadores.\nErro técnico: ${err.message || err.code || 'Desconhecido'}\nDetalhes: ${JSON.stringify(err)}`);
+      handleAuthOrTechnicalError(err, 'Falha ao salvar os jogadores');
     }
     setSaving(false);
   };
@@ -346,11 +380,11 @@ Regras:
 
       setIsDirty({ ...isDirty, aventura: false });
       setSaveStatus('success');
+      showToast('Metadados da aventura salvos!');
       setTimeout(() => setSaveStatus('idle'), 3000);
     } catch (err: any) {
-      console.error('Save aventura error:', err);
       setSaveStatus('error');
-      alert(`Falha ao salvar a aventura.\nErro técnico: ${err.message || err.code || 'Desconhecido'}\nDetalhes: ${JSON.stringify(err)}`);
+      handleAuthOrTechnicalError(err, 'Falha ao salvar a aventura');
     }
     setSaving(false);
   };
@@ -360,6 +394,7 @@ Regras:
     if (!(await checkSession())) return;
     try {
       const { data, error } = await supabase.from('sessions').insert({
+        id: crypto.randomUUID(),
         chronicle_id: id,
         title: 'Nova Sessão',
         date_str: 'Dia X',
@@ -371,10 +406,10 @@ Regras:
       if (data) {
         setSessions([...sessions, { ...data, chapters: [] }]);
         setEditingSession({ ...data, chapters: [] });
+        showToast('Nova sessão criada com sucesso!');
       }
     } catch (err: any) {
-      console.error('Erro ao adicionar sessão:', err);
-      alert(`Falha ao criar nova sessão.\nErro técnico: ${err.message || err.code || 'Desconhecido'}\nDetalhes: ${JSON.stringify(err)}`);
+      handleAuthOrTechnicalError(err, 'Falha ao criar nova sessão');
     }
   };
 
@@ -385,9 +420,9 @@ Regras:
       const { error } = await supabase.from('sessions').delete().eq('id', sessionId);
       if (error) throw error;
       setSessions(sessions.filter(s => s.id !== sessionId));
+      showToast('Sessão excluída com sucesso!');
     } catch (err: any) {
-      console.error('Delete session error:', err);
-      alert(`Erro ao excluir sessão.\nErro técnico: ${err.message || err.code || 'Desconhecido'}\nDetalhes: ${JSON.stringify(err)}`);
+      handleAuthOrTechnicalError(err, 'Erro ao excluir sessão');
     }
   };
 
@@ -399,6 +434,7 @@ Regras:
     
     try {
       const { data, error } = await supabase.from('chapters').insert({
+        id: crypto.randomUUID(),
         session_id: sessionId,
         title: 'Novo Capítulo',
         content: '',
@@ -411,10 +447,10 @@ Regras:
       if (data) {
         setSessions(sessions.map(s => s.id === sessionId ? { ...s, chapters: [...(s.chapters || []), data].sort((a: Chapter, b: Chapter) => a.order_index - b.order_index) } : s));
         setEditingChapter({ chapter: data, sessionId });
+        showToast('Novo capítulo criado!');
       }
     } catch (err: any) {
-      console.error('Add chapter error:', err);
-      alert(`Falha ao adicionar capítulo.\nErro técnico: ${err.message || err.code || 'Desconhecido'}\nDetalhes: ${JSON.stringify(err)}`);
+      handleAuthOrTechnicalError(err, 'Falha ao adicionar capítulo');
     }
   };
 
@@ -425,9 +461,9 @@ Regras:
       const { error } = await supabase.from('chapters').delete().eq('id', chapterId);
       if (error) throw error;
       setSessions(sessions.map(s => s.id === sessionId ? { ...s, chapters: s.chapters?.filter(c => c.id !== chapterId) } : s));
+      showToast('Capítulo excluído!');
     } catch (err: any) {
-      console.error('Delete chapter error:', err);
-      alert(`Erro ao excluir capítulo.\nErro técnico: ${err.message || err.code || 'Desconhecido'}\nDetalhes: ${JSON.stringify(err)}`);
+      handleAuthOrTechnicalError(err, 'Erro ao excluir capítulo');
     }
   };
 
@@ -455,6 +491,7 @@ Regras:
     if (!(await checkSession())) return;
     try {
       const { data, error } = await supabase.from('players').insert({
+        id: crypto.randomUUID(),
         chronicle_id: id,
         real_name: 'Novo Jogador',
         char_name: 'Novo Personagem',
@@ -464,10 +501,12 @@ Regras:
 
       if (error) throw error;
 
-      if (data) setPlayers([...players, data]);
+      if (data) {
+        setPlayers([...players, data]);
+        showToast('Novo jogador adicionado!');
+      }
     } catch (err: any) {
-      console.error('Add player error:', err);
-      alert(`Falha ao adicionar jogador.\nErro técnico: ${err.message || err.code || 'Desconhecido'}\nDetalhes: ${JSON.stringify(err)}`);
+      handleAuthOrTechnicalError(err, 'Falha ao adicionar jogador');
     }
   };
 
@@ -478,9 +517,9 @@ Regras:
       const { error } = await supabase.from('players').delete().eq('id', playerId);
       if (error) throw error;
       setPlayers(players.filter(p => p.id !== playerId));
+      showToast('Jogador removido!');
     } catch (err: any) {
-      console.error('Delete player error:', err);
-      alert(`Erro ao excluir jogador.\nErro técnico: ${err.message || err.code || 'Desconhecido'}\nDetalhes: ${JSON.stringify(err)}`);
+      handleAuthOrTechnicalError(err, 'Erro ao excluir jogador');
     }
   };
 
@@ -1108,6 +1147,36 @@ Regras:
               )}
             </motion.div>
           </div>
+        )}
+      </AnimatePresence>
+
+      {/* Toast Notificação Medieval Premium */}
+      <AnimatePresence>
+        {toast && (
+          <motion.div
+            initial={{ opacity: 0, y: 50, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.9 }}
+            className={`fixed bottom-6 right-6 z-[120] flex items-center gap-3 px-5 py-4 rounded shadow-2xl border ${
+              toast.type === 'error'
+                ? 'bg-red-950/95 text-red-200 border-red-800'
+                : 'bg-neutral-900/95 text-gold border-gold/30'
+            }`}
+            style={{ backdropFilter: 'blur(8px)' }}
+          >
+            {toast.type === 'error' ? (
+              <XCircle className="text-red-500 shrink-0" size={20} />
+            ) : (
+              <CheckCircle2 className="text-gold shrink-0" size={20} />
+            )}
+            <span className="font-cinzel text-xs tracking-wider font-semibold">{toast.message}</span>
+            <button
+              onClick={() => setToast(null)}
+              className="text-neutral-500 hover:text-white transition-colors ml-2"
+            >
+              <X size={16} />
+            </button>
+          </motion.div>
         )}
       </AnimatePresence>
     </div>
