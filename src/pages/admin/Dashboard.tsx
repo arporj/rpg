@@ -10,8 +10,27 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
+  const checkSession = async (): Promise<boolean> => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      navigate('/admin', { 
+        state: { 
+          message: 'Sua sessão expirou. Por favor, faça login novamente para continuar.' 
+        } 
+      });
+      return false;
+    }
+    return true;
+  };
+
   useEffect(() => {
-    fetchData();
+    async function init() {
+      const active = await checkSession();
+      if (active) {
+        fetchData();
+      }
+    }
+    init();
   }, []);
 
   async function fetchData() {
