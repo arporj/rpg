@@ -25,79 +25,102 @@ serve(async (req) => {
       db: { schema: 'rpg' }
     });
 
-    // Get the exact payload injected by the database webhook
     const payload = await req.json();
     
-    // We expect an UPDATE payload for the sessions table where is_published turns true
-    if (payload.type !== "UPDATE" || payload.table !== "sessions") {
-      return new Response(JSON.stringify({ message: "Ignored non-update or non-session event" }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
-      });
+    let emails: string[] = [];
+    const isManual = payload.type === "MANUAL";
+    const sessionId = isManual ? payload.session_id : null;
+    const manualEmail = isManual ? payload.email : null;
+    
+    let session: any = null;
+    
+    if (isManual) {
+      // 1. Carregar os dados da sessão diretamente
+      const { data: sessData, error: sessErr } = await supabase
+        .from('sessions')
+        .select('*')
+        .eq('id', sessionId)
+        .single();
+        
+      if (sessErr || !sessData) {
+        throw new Error("Session not found for manual notification");
+      }
+      session = sessData;
+      emails = [manualEmail];
+    } else {
+      // Fluxo automático de webhook após publicação da sessão
+      if (payload.type !== "UPDATE" || payload.table !== "sessions") {
+        return new Response(JSON.stringify({ message: "Ignored non-update or non-session event" }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 200,
+        });
+      }
+
+      session = payload.record;
+      const oldSession = payload.old_record || {};
+
+      // Envia APENAS se a sessão mudou de não publicada para publicada
+      if (!session.is_published || oldSession.is_published === true) {
+        return new Response(JSON.stringify({ message: "Session is not newly published. Ignoring." }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 200,
+        });
+      }
     }
 
-    const session = payload.record;
-    const oldSession = payload.old_record || {};
-
-    // ONLY SEND if it was unpublished and now is published
-    if (!session.is_published || oldSession.is_published === true) {
-      return new Response(JSON.stringify({ message: "Session is not newly published. Ignoring." }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
-      });
-    }
-
-    // 1. Fetch Chronicle data for context
+    // 2. Carregar dados da Crônica para contexto
     const { data: chronicle } = await supabase
       .from('chronicles')
       .select('title, slug')
       .eq('id', session.chronicle_id)
       .single();
 
-    if (!chronicle) throw new Error("Chronicle not found");
-
-    // 2. Fetch all appropriate subscribers
-    const { data: subAll } = await supabase
-      .from('newsletter_subscribers')
-      .select('email')
-      .eq('subscribe_all', true);
-
-    const { data: subSpecific } = await supabase
-      .from('newsletter_chronicle_subscriptions')
-      .select('subscriber_id, newsletter_subscribers!inner(email)')
-      .eq('chronicle_id', session.chronicle_id);
-
-    const emailSet = new Set<string>();
-    
-    if (subAll) {
-      subAll.forEach((row: any) => emailSet.add(row.email));
-    }
-    
-    if (subSpecific) {
-      subSpecific.forEach((row: any) => emailSet.add(row.newsletter_subscribers.email));
+    if (!chronicle) {
+      throw new Error("Chronicle not found");
     }
 
-    const emails = Array.from(emailSet);
+    if (!isManual) {
+      // 3. Buscar todos os assinantes apropriados
+      const { data: subAll } = await supabase
+        .from('newsletter_subscribers')
+        .select('email')
+        .eq('subscribe_all', true);
 
-    if (emails.length === 0) {
-      return new Response(JSON.stringify({ message: "No subscribers found to notify" }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
-      });
+      const { data: subSpecific } = await supabase
+        .from('newsletter_chronicle_subscriptions')
+        .select('subscriber_id, newsletter_subscribers!inner(email)')
+        .eq('chronicle_id', session.chronicle_id);
+
+      const emailSet = new Set<string>();
+      
+      if (subAll) {
+        subAll.forEach((row: any) => emailSet.add(row.email));
+      }
+      
+      if (subSpecific) {
+        subSpecific.forEach((row: any) => emailSet.add(row.newsletter_subscribers.email));
+      }
+
+      emails = Array.from(emailSet);
+
+      if (emails.length === 0) {
+        return new Response(JSON.stringify({ message: "No subscribers found to notify" }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 200,
+        });
+      }
     }
 
-    // Direct route to the session
+    // Gerar link e informações do e-mail
     const sessionNumber = (session.order_index + 1).toString().padStart(4, '0');
-    const sessionLink = `http://rpg.andreric.com/${chronicle.slug}/${sessionNumber}`;
+    const sessionLink = `https://rpg.andreric.com/${chronicle.slug}/${sessionNumber}`;
     const adventureTitle = chronicle.title;
     const sessionTitle = session.title;
 
-    // 3. Send email via Brevo
+    // 4. Enviar e-mail via Brevo
     if (!BREVO_API_KEY) {
       throw new Error("Missing BREVO_API_KEY");
     }
-
-    const bccList = emails.map((email) => ({ email }));
 
     const htmlContent = `
       <div style="font-family: 'Times New Roman', serif; max-width: 600px; margin: 0 auto; background-color: #050505; color: #f4ebd8; padding: 40px; border: 1px solid #d4af37;">
@@ -107,7 +130,7 @@ serve(async (req) => {
         </div>
         
         <p style="font-size: 18px; line-height: 1.6;">Saudações Aventureiro,</p>
-        <p style="font-size: 18px; line-height: 1.6;">Uma nova sessão inteira foi publicada nas páginas do códice. A história <strong>${adventureTitle}</strong> revela agora os mistérios de <em>${sessionTitle}</em>.</p>
+        <p style="font-size: 18px; line-height: 1.6;">Uma nova sessão foi publicada nas páginas do códice. A história <strong>${adventureTitle}</strong> revela agora os mistérios de <em>${sessionTitle}</em>.</p>
         
         <div style="text-align: center; margin: 40px 0;">
           <a href="${sessionLink}" style="display: inline-block; padding: 12px 24px; background-color: rgba(212, 175, 55, 0.1); border: 1px solid #d4af37; color: #d4af37; text-decoration: none; text-transform: uppercase; letter-spacing: 2px; font-size: 14px; font-weight: bold;">
@@ -118,17 +141,29 @@ serve(async (req) => {
         <hr style="border: 0; border-bottom: 1px solid rgba(212, 175, 55, 0.3); margin: 30px 0;" />
         <p style="text-align: center; font-size: 14px; color: rgba(244, 235, 216, 0.6); font-style: italic;">
           Que os dados rolem ao seu favor.<br>
-          <a href="http://rpg.andreric.com/codex" style="color: #d4af37; text-decoration: underline;">Voltar ao Tomo das Aventuras</a>
+          <a href="https://rpg.andreric.com/codex" style="color: #d4af37; text-decoration: underline;">Voltar ao Tomo das Aventuras</a>
         </p>
       </div>
     `;
 
-    const brevoPayload = {
-      sender: { name: "O Tomo das Aventuras", email: "tomo@arrcsistemas.com.br" },
-      bcc: bccList,
-      subject: `Nova Sessão Publicada: ${adventureTitle} - ${sessionTitle}`,
-      htmlContent: htmlContent,
-    };
+    let brevoPayload: any = {};
+    if (isManual) {
+      brevoPayload = {
+        sender: { name: "O Tomo das Aventuras", email: "tomo@arrcsistemas.com.br" },
+        to: [{ email: manualEmail }],
+        subject: `Nova Sessão Publicada: ${adventureTitle} - ${sessionTitle}`,
+        htmlContent: htmlContent,
+      };
+    } else {
+      const bccList = emails.map((email) => ({ email }));
+      brevoPayload = {
+        sender: { name: "O Tomo das Aventuras", email: "tomo@arrcsistemas.com.br" },
+        to: [{ name: "O Tomo das Aventuras", email: "tomo@arrcsistemas.com.br" }],
+        bcc: bccList,
+        subject: `Nova Sessão Publicada: ${adventureTitle} - ${sessionTitle}`,
+        htmlContent: htmlContent,
+      };
+    }
 
     const res = await fetch("https://api.brevo.com/v3/smtp/email", {
       method: "POST",
@@ -146,7 +181,9 @@ serve(async (req) => {
     }
 
     return new Response(JSON.stringify({ 
-      message: `Enviado com sucesso para ${emails.length} aventureiros.`,
+      message: isManual 
+        ? `Notificação manual enviada com sucesso para ${manualEmail}.` 
+        : `Enviado com sucesso para ${emails.length} aventureiros.`,
       emailsSent: emails.length 
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
