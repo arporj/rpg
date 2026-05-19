@@ -1,4 +1,4 @@
--- Módulo de Webhook para Newsletter
+-- Módulo de Webhook para Newsletter (Corrigido)
 -- Este script configura o gatilho que dispara a Edge Function quando uma sessão é publicada.
 
 -- 1. Garante que a extensão de rede HTTP está disponível
@@ -15,20 +15,21 @@ BEGIN
   -- Disparar apenas se a sessão mudou de rascunho para publicado
   IF (NEW.is_published = true AND (OLD.is_published = false OR OLD.is_published IS NULL)) THEN
     PERFORM
-      extensions.http_post(
+      extensions.http((
+        'POST',
         'https://kwdweztilsoxxcgudtsz.supabase.co/functions/v1/send-new-session-email',
+        ARRAY[
+          extensions.http_header('Authorization', 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt3ZHdlenRpbHNveHhjZ3VkdHN6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQxMzI2NzcsImV4cCI6MjA5OTcwODY3N30.IJY1Ol_xmL7Y-GJMqjuCCglDq9H-K4RhxxZK0pqKDMo'),
+          extensions.http_header('apikey', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt3ZHdlenRpbHNveHhjZ3VkdHN6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQxMzI2NzcsImV4cCI6MjA5OTcwODY3N30.IJY1Ol_xmL7Y-GJMqjuCCglDq9H-K4RhxxZK0pqKDMo')
+        ],
+        'application/json',
         jsonb_build_object(
           'type', 'UPDATE',
           'table', 'sessions',
           'record', row_to_json(NEW),
           'old_record', row_to_json(OLD)
-        )::text,
-        'application/json',
-        jsonb_build_object(
-          'Authorization', 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt3ZHdlenRpbHNveHhjZ3VkdHN6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQxMzI2NzcsImV4cCI6MjA5OTcwODY3N30.IJY1Ol_xmL7Y-GJMqjuCCglDq9H-K4RhxxZK0pqKDMo',
-          'apikey', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt3ZHdlenRpbHNveHhjZ3VkdHN6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQxMzI2NzcsImV4cCI6MjA5OTcwODY3N30.IJY1Ol_xmL7Y-GJMqjuCCglDq9H-K4RhxxZK0pqKDMo'
         )::text
-      );
+      )::extensions.http_request);
   END IF;
   RETURN NEW;
 END;
