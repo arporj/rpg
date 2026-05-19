@@ -123,50 +123,57 @@ serve(async (req) => {
     }
 
     const htmlContent = `
-      <div style="background-color: #161311; color: #f4ebd8; font-family: Georgia, serif; max-width: 600px; margin: 0 auto; padding: 50px 40px; border: 1px solid #d4af37; box-sizing: border-box; text-align: center;">
-        <!-- Cabeçalho -->
-        <div style="margin-bottom: 40px;">
-          <h2 style="color: #d4af37; text-transform: uppercase; letter-spacing: 4px; font-size: 16px; font-weight: normal; margin: 0 0 15px 0;">O Tomo das Aventuras</h2>
-          <div style="width: 40px; height: 1px; background-color: #d4af37; margin: 0 auto;"></div>
-        </div>
+      <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #171412; width: 100%; margin: 0; padding: 40px 0; font-family: Georgia, serif;">
+        <tr>
+          <td align="center">
+            <div style="background-color: #171412; max-width: 600px; width: 100%; padding: 50px 40px; border: 1px solid rgba(212, 175, 55, 0.25); box-sizing: border-box; text-align: center;">
+              <!-- Cabeçalho -->
+              <div style="margin-bottom: 45px;">
+                <h2 style="color: #a8967a; text-transform: uppercase; letter-spacing: 4px; font-size: 12px; font-weight: normal; margin: 0 0 15px 0;">O Tomo das Aventuras</h2>
+                <div style="width: 50px; height: 1px; background-color: #c27c38; margin: 0 auto;"></div>
+              </div>
 
-        <!-- Título da Aventura -->
-        <h1 style="color: #d4af37; text-transform: uppercase; letter-spacing: 2px; font-size: 26px; font-weight: bold; margin: 0 0 10px 0; line-height: 1.3;">
-          \${adventureTitle}
-        </h1>
+              <!-- Título da Aventura -->
+              <h1 style="color: #d47a20; text-transform: uppercase; letter-spacing: 2px; font-size: 28px; font-weight: bold; margin: 0 0 15px 0; line-height: 1.3;">
+                \${adventureTitle}
+              </h1>
 
-        <!-- Nome da Sessão -->
-        <p style="font-style: italic; color: #d4af37; font-size: 18px; margin: 0 0 40px 0; letter-spacing: 1px;">
-          — \${sessionTitle} —
-        </p>
+              <!-- Nome da Sessão -->
+              <p style="font-style: italic; color: #a8967a; font-size: 18px; margin: 0 0 45px 0; letter-spacing: 1px;">
+                — \${sessionTitle} —
+              </p>
 
-        <!-- Saudação e Texto Principal -->
-        <div style="font-size: 16px; line-height: 1.8; color: #e2d7c5; margin-bottom: 40px; text-align: center;">
-          <p style="margin: 0 0 20px 0; font-weight: bold; letter-spacing: 0.5px;">Saudações, aventureiro.</p>
-          <p style="margin: 0 0 20px 0;">Uma nova sessão foi registrada nos pergaminhos do códice. Prepare sua mente e seus dados, pois novos mistérios e perigos aguardam sua leitura.</p>
-        </div>
+              <!-- Saudação e Texto Principal -->
+              <div style="font-size: 15px; line-height: 1.8; color: #d1c2a5; margin-bottom: 45px; text-align: center; letter-spacing: 0.5px;">
+                <p style="margin: 0 0 20px 0;">Saudações, aventureiro.</p>
+                <p style="margin: 0 0 20px 0;">A jornada avança — e o mundo se revela cada vez mais vasto e perigoso.</p>
+                <p style="margin: 0;">Os próximos acontecimentos já foram registrados no Tomo das Aventuras.</p>
+              </div>
 
-        <!-- Botão de Ação (Outline Dourado) -->
-        <div style="margin-bottom: 50px;">
-          <a href="\${sessionLink}" style="display: inline-block; padding: 15px 35px; background-color: transparent; border: 1px solid #d4af37; color: #d4af37; text-decoration: none; text-transform: uppercase; letter-spacing: 3px; font-size: 13px; font-weight: bold;">
-            Ler Nova Sessão
-          </a>
-        </div>
+              <!-- Botão de Ação (Outline Dourado/Laranja) -->
+              <div style="margin-bottom: 50px;">
+                <a href="\${sessionLink}" style="display: inline-block; padding: 15px 35px; background-color: transparent; border: 1px solid #d47a20; color: #d47a20; text-decoration: none; text-transform: uppercase; letter-spacing: 3px; font-size: 13px; font-weight: bold;">
+                  Ler Nova Sessão
+                </a>
+              </div>
 
-        <!-- Linha divisória antes do rodapé -->
-        <div style="width: 100%; height: 1px; background-color: rgba(212, 175, 55, 0.2); margin: 0 auto 30px auto;"></div>
+              <!-- Linha divisória antes do rodapé -->
+              <div style="width: 100%; height: 1px; background-color: rgba(212, 175, 55, 0.1); margin: 0 auto 30px auto;"></div>
 
-        <!-- Rodapé -->
-        <div style="font-size: 11px; letter-spacing: 2px; color: #d4af37; text-transform: uppercase; margin-bottom: 15px; font-weight: bold;">
-          Que os dados rolem ao seu favor
-        </div>
-        
-        <div>
-          <a href="https://rpg.andreric.com/codex" style="color: #a89475; text-decoration: underline; font-size: 13px; letter-spacing: 0.5px;">
-            Ir para a página inicial
-          </a>
-        </div>
-      </div>
+              <!-- Rodapé -->
+              <div style="font-size: 10px; letter-spacing: 2px; color: #a8967a; text-transform: uppercase; margin-bottom: 15px; font-weight: bold;">
+                Que os dados rolem ao seu favor
+              </div>
+              
+              <div>
+                <a href="https://rpg.andreric.com/codex" style="color: #8f7d66; text-decoration: underline; font-size: 12px; letter-spacing: 0.5px;">
+                  Ir para a página inicial
+                </a>
+              </div>
+            </div>
+          </td>
+        </tr>
+      </table>
     `;
 
     let brevoPayload: any = {};
