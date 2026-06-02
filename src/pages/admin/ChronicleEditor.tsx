@@ -44,6 +44,7 @@ export default function ChronicleEditor() {
   const [showPromptModal, setShowPromptModal] = useState(false);
   const [generatedPrompt, setGeneratedPrompt] = useState('');
   const [isGeneratingPrompt, setIsGeneratingPrompt] = useState(false);
+  const [promptStatusText, setPromptStatusText] = useState('Consultando os Oráculos...');
   const [copySuccess, setCopySuccess] = useState(false);
   const [errorAI, setErrorAI] = useState<string | null>(null);
   const [editingSession, setEditingSession] = useState<Session | null>(null);
@@ -201,6 +202,7 @@ export default function ChronicleEditor() {
     }
 
     setIsGeneratingPrompt(true);
+    setPromptStatusText('Consultando os Oráculos...');
     setErrorAI(null);
     setGeneratedPrompt('');
     setShowPromptModal(true);
@@ -243,8 +245,74 @@ Regras:
       }
       
       const text = (response?.text ?? '').trim();
-      
       setGeneratedPrompt(text);
+
+      // Inicia a geração de imagem automática com o Imagen 3
+      setPromptStatusText('Pintando a Ilustração com IA...');
+      
+      try {
+        const cleanPrompt = text.replace(/--ar\s+\d+:\d+/gi, '').trim();
+        const imageResponse = await ai.models.generateImages({
+          model: 'imagen-3.0-generate-002',
+          prompt: cleanPrompt,
+          config: {
+            numberOfImages: 1,
+            outputMimeType: 'image/jpeg',
+            aspectRatio: '16:9',
+          },
+        });
+
+        const imageBytes = imageResponse.generatedImages?.[0]?.image?.imageBytes;
+        if (!imageBytes) {
+          throw new Error("Nenhum dado de imagem retornado.");
+        }
+
+        // Converter base64 em File
+        const byteCharacters = atob(imageBytes);
+        const byteNumbers = new Array(byteCharacters.length);
+        for (let i = 0; i < byteCharacters.length; i++) {
+          byteNumbers[i] = byteCharacters.charCodeAt(i);
+        }
+        const byteArray = new Uint8Array(byteNumbers);
+        const file = new File([byteArray], `ia_${chapter.id}.jpg`, { type: 'image/jpeg' });
+
+        const sessionId = editingChapter?.sessionId;
+        if (!sessionId) {
+          throw new Error("Sessão não identificada para salvar imagem.");
+        }
+
+        // Fazer upload da imagem para o Supabase
+        const storagePath = await handleChapterFileUpload(file, chapter, sessionId);
+
+        // Salvar o caminho no banco de dados do capítulo
+        const { error: dbError } = await supabase
+          .from('chapters')
+          .update({ image_url: storagePath })
+          .eq('id', chapter.id);
+
+        if (dbError) throw dbError;
+
+        // Atualizar o estado de sessões do editor
+        setSessions((prevSessions: Session[]) => prevSessions.map((s: Session) => 
+          s.id === sessionId 
+            ? { ...s, chapters: s.chapters?.map((c: Chapter) => c.id === chapter.id ? { ...c, image_url: storagePath } : c) } 
+            : s
+        ));
+
+        // Atualizar a modal aberta
+        if (editingChapter && editingChapter.chapter.id === chapter.id) {
+          setEditingChapter({
+            ...editingChapter,
+            chapter: { ...editingChapter.chapter, image_url: storagePath }
+          });
+        }
+
+        showToast("Ilustração gerada e salva com sucesso!");
+        setShowPromptModal(false); // Fecha o modal de prompt
+      } catch (imageErr: any) {
+        console.warn("[IA] Geração de imagem falhou. Exibindo prompt para uso manual:", imageErr);
+        setErrorAI(`Não foi possível gerar a imagem diretamente (Sua chave gratuita pode não ter acesso de imagens). Exibindo o prompt abaixo para uso manual.`);
+      }
     } catch (err: any) {
       console.error('Gemini Error:', err);
       setErrorAI("Erro ao gerar prompt: " + (err.message || "Tente novamente."));
@@ -1147,7 +1215,7 @@ Regras:
               {isGeneratingPrompt ? (
                 <div className="flex flex-col items-center py-12 gap-4">
                   <Loader2 className="animate-spin text-gold" size={48} />
-                  <p className="text-gold/60 font-cinzel animate-pulse">Consultando os Oráculos...</p>
+                  <p className="text-gold/60 font-cinzel animate-pulse">{promptStatusText}</p>
                 </div>
               ) : errorAI ? (
                 <div className="bg-red-900/20 border border-red-900/50 p-6 rounded text-red-200 text-sm mb-6 flex items-start gap-4">
