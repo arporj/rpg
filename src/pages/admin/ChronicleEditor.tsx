@@ -393,12 +393,16 @@ Regras:
   const addSession = async () => {
     if (!(await checkSession())) return;
     try {
+      const nextOrderIndex = sessions.length > 0
+        ? Math.max(...sessions.map((s: Session) => s.order_index ?? 0)) + 1
+        : 0;
+
       const { data, error } = await supabase.from('sessions').insert({
         id: crypto.randomUUID(),
         chronicle_id: id,
         title: 'Nova Sessão',
         date_str: 'Dia X',
-        order_index: sessions.length
+        order_index: nextOrderIndex
       }).select().single();
 
       if (error) throw error;
@@ -406,6 +410,7 @@ Regras:
       if (data) {
         setSessions([...sessions, { ...data, chapters: [] }]);
         setEditingSession({ ...data, chapters: [] });
+        setExpandedSessions((prev: string[]) => [...prev, data.id]);
         showToast('Nova sessão criada com sucesso!');
       }
     } catch (err: any) {
@@ -603,18 +608,24 @@ Regras:
                     </div>
                   )}
 
-                  {[...sessions].sort((a, b) => b.order_index - a.order_index).map((session) => (
+                  {[...sessions].sort((a: Session, b: Session) => (b.order_index ?? 0) - (a.order_index ?? 0)).map((session: Session) => (
                     <div key={session.id} className="bg-ink/60 border border-gold/10 rounded-sm overflow-hidden shadow-2xl">
                       {/* Session Header */}
                       <div 
                         className="bg-ink p-4 border-b border-gold/10 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 cursor-pointer hover:bg-neutral-900 transition-colors"
-                        onClick={(e) => {
+                        onClick={(e: React.MouseEvent) => {
                           if ((e.target as HTMLElement).closest('button')) return;
                           toggleSession(session.id);
                         }}
                       >
                         <div className="flex items-center gap-3">
-                          <button className="text-gold/60 p-1 hover:text-gold transition-colors">
+                          <button 
+                            onClick={(e: React.MouseEvent) => {
+                              e.stopPropagation();
+                              toggleSession(session.id);
+                            }}
+                            className="text-gold/60 p-1 hover:text-gold transition-colors"
+                          >
                             {expandedSessions.includes(session.id) ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
                           </button>
                           <div className="flex flex-col">
