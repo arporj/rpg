@@ -26,7 +26,7 @@ export default function Adventure() {
     if (sessions.length > 0) {
       if (sessionNumber) {
         const idx = parseInt(sessionNumber, 10) - 1;
-        const targetSession = sessions.find(s => s.order_index === idx);
+        const targetSession = sessions[idx];
         setActiveSession(targetSession || sessions[0] || null);
       } else {
         setActiveSession(sessions[0] || null);
@@ -65,7 +65,7 @@ export default function Adventure() {
       .select('*, chapters(*)')
       .eq('chronicle_id', chrData.id)
       .eq('is_published', true)
-      .order('order_index', { ascending: true });
+      .order('session_date', { ascending: true });
 
     if (sessData) {
       setSessions(sessData);
@@ -113,11 +113,11 @@ export default function Adventure() {
         </div>
 
         <nav className="flex-1 overflow-y-auto p-4 space-y-2 custom-scrollbar">
-          {sessions.map((session) => (
+          {sessions.map((session: Session, index: number) => (
             <button
                key={session.id}
                onClick={() => {
-                 navigate(`/${slug}/${(session.order_index + 1).toString().padStart(4, '0')}`);
+                 navigate(`/${slug}/${(index + 1).toString().padStart(4, '0')}`);
                  setIsSidebarOpen(false);
                }}
               className={`w-full text-left p-4 rounded transition-all duration-300 group relative ${
