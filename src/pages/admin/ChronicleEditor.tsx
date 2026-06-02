@@ -311,7 +311,7 @@ Regras:
         setShowPromptModal(false); // Fecha o modal de prompt
       } catch (imageErr: any) {
         console.warn("[IA] Geração de imagem falhou. Exibindo prompt para uso manual:", imageErr);
-        setErrorAI(`Não foi possível gerar a imagem diretamente (Sua chave gratuita pode não ter acesso de imagens). Exibindo o prompt abaixo para uso manual.`);
+        setErrorAI(`Não foi possível gerar a imagem diretamente: ${imageErr.message || imageErr}. O prompt gerado em texto está exibido abaixo para uso manual.`);
       }
     } catch (err: any) {
       console.error('Gemini Error:', err);
@@ -1217,22 +1217,27 @@ Regras:
                   <Loader2 className="animate-spin text-gold" size={48} />
                   <p className="text-gold/60 font-cinzel animate-pulse">{promptStatusText}</p>
                 </div>
-              ) : errorAI ? (
-                <div className="bg-red-900/20 border border-red-900/50 p-6 rounded text-red-200 text-sm mb-6 flex items-start gap-4">
-                  <XCircle className="shrink-0" />
-                  <p>{errorAI}</p>
-                </div>
               ) : (
                 <div className="space-y-6">
-                  <div className="bg-black/40 border border-gold/10 p-6 rounded text-parchment italic font-serif leading-relaxed text-lg min-h-[150px] relative group">
-                    {generatedPrompt}
-                    <button 
-                      onClick={copyToClipboard}
-                      className="absolute bottom-4 right-4 bg-gold/10 hover:bg-gold text-gold hover:text-ink p-2 rounded transition-all"
-                    >
-                      {copySuccess ? <Check size={20} /> : <Copy size={20} />}
-                    </button>
-                  </div>
+                  {errorAI && (
+                    <div className="bg-red-900/20 border border-red-900/50 p-4 rounded text-red-200 text-xs flex items-start gap-3">
+                      <XCircle className="shrink-0 mt-0.5" size={16} />
+                      <p>{errorAI}</p>
+                    </div>
+                  )}
+
+                  {generatedPrompt && (
+                    <div className="bg-black/40 border border-gold/10 p-6 rounded text-parchment italic font-serif leading-relaxed text-lg min-h-[150px] relative group">
+                      {generatedPrompt}
+                      <button 
+                        onClick={copyToClipboard}
+                        className="absolute bottom-4 right-4 bg-gold/10 hover:bg-gold text-gold hover:text-ink p-2 rounded transition-all"
+                      >
+                        {copySuccess ? <Check size={20} /> : <Copy size={20} />}
+                      </button>
+                    </div>
+                  )}
+
                   <div className="flex justify-center">
                     <button 
                       onClick={() => setShowPromptModal(false)}
