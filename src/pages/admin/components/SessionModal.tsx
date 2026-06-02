@@ -56,13 +56,21 @@ export function SessionModal({ session: initialSession, onSave, onClose }: Props
               />
             </div>
             <div>
-              <label className="text-[10px] text-gold/40 font-bold uppercase mb-2 block tracking-widest">Data Real da Sessão</label>
+              <label className="text-[10px] text-gold/40 font-bold uppercase mb-2 block tracking-widest">
+                Data Real da Sessão <span className="text-red-500">*</span>
+              </label>
               <input 
                 type="date"
+                required
                 value={session.session_date || ''} 
                 onChange={(e) => setSession({ ...session, session_date: e.target.value })}
-                className="bg-neutral-900/50 border border-neutral-700 focus:border-gold outline-none p-3 rounded w-full text-neutral-300 transition-colors css-date-picker"
+                className={`bg-neutral-900/50 border outline-none p-3 rounded w-full text-neutral-300 transition-colors css-date-picker ${
+                  !session.session_date ? 'border-red-500/50 focus:border-red-500' : 'border-neutral-700 focus:border-gold'
+                }`}
               />
+              {!session.session_date && (
+                <span className="text-red-500 text-[10px] mt-1 block">A data da sessão é obrigatória.</span>
+              )}
             </div>
           </div>
         </div>
@@ -70,8 +78,13 @@ export function SessionModal({ session: initialSession, onSave, onClose }: Props
         <div className="mt-8 pt-6 border-t border-gold/10 flex justify-end gap-4">
           <button onClick={onClose} className="px-6 py-2 text-neutral-400 hover:text-white font-bold text-sm tracking-widest uppercase transition-colors">Cancelar</button>
           <button 
-            onClick={() => onSave(session)}
-            className="bg-gold text-ink px-8 py-2 font-bold hover:bg-yellow-500 transition-colors rounded-sm flex items-center gap-2"
+            onClick={() => {
+              if (session.session_date) {
+                onSave(session);
+              }
+            }}
+            disabled={!session.session_date}
+            className="bg-gold text-ink px-8 py-2 font-bold hover:bg-yellow-500 transition-colors rounded-sm flex items-center gap-2 disabled:opacity-30 disabled:cursor-not-allowed"
           >
             <Save size={18} /> CONFIRMAR
           </button>

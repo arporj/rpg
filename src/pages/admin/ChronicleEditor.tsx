@@ -123,7 +123,7 @@ export default function ChronicleEditor() {
     setLoading(true);
     try {
       const { data: chr } = await supabase.from('chronicles').select('*, systems(*)').eq('id', id).single();
-      const { data: sess } = await supabase.from('sessions').select('*, chapters(*)').eq('chronicle_id', id).order('order_index', { ascending: true });
+      const { data: sess } = await supabase.from('sessions').select('*, chapters(*)').eq('chronicle_id', id).order('session_date', { ascending: true });
       const { data: plrs } = await supabase.from('players').select('*').eq('chronicle_id', id).order('real_name', { ascending: true });
       const { data: sys } = await supabase.from('systems').select('*');
 
@@ -297,7 +297,18 @@ Regras:
     setSaving(true);
     setSaveStatus('saving');
     try {
-      for (const session of sessions) {
+      const sortedByDateAsc = [...sessions].sort((a: Session, b: Session) => {
+        const dateA = a.session_date ? new Date(a.session_date).getTime() : 0;
+        const dateB = b.session_date ? new Date(b.session_date).getTime() : 0;
+        return dateA - dateB;
+      });
+
+      const updatedSessions = sortedByDateAsc.map((session: Session, idx: number) => ({
+        ...session,
+        order_index: idx
+      }));
+
+      for (const session of updatedSessions) {
         const { error: sessionError } = await supabase.from('sessions').update({
           title: session.title,
           date_str: session.date_str,
@@ -320,6 +331,7 @@ Regras:
           }
         }
       }
+      setSessions(updatedSessions);
       setIsDirty({ ...isDirty, sessions: false });
       setSaveStatus('success');
       showToast('Jornada salva com sucesso!');
@@ -397,12 +409,15 @@ Regras:
         ? Math.max(...sessions.map((s: Session) => s.order_index ?? 0)) + 1
         : 0;
 
+      const today = new Date().toISOString().split('T')[0];
+
       const { data, error } = await supabase.from('sessions').insert({
         id: crypto.randomUUID(),
         chronicle_id: id,
         title: 'Nova Sessão',
         date_str: 'Dia X',
-        order_index: nextOrderIndex
+        order_index: nextOrderIndex,
+        session_date: today
       }).select().single();
 
       if (error) throw error;
@@ -608,7 +623,11 @@ Regras:
                     </div>
                   )}
 
-                  {[...sessions].sort((a: Session, b: Session) => (b.order_index ?? 0) - (a.order_index ?? 0)).map((session: Session) => (
+                  {[...sessions].sort((a: Session, b: Session) => {
+                    const dateA = a.session_date ? new Date(a.session_date).getTime() : 0;
+                    const dateB = b.session_date ? new Date(b.session_date).getTime() : 0;
+                    return dateB - dateA;
+                  }).map((session: Session) => (
                     <div key={session.id} className="bg-ink/60 border border-gold/10 rounded-sm overflow-hidden shadow-2xl">
                       {/* Session Header */}
                       <div 
