@@ -222,7 +222,7 @@ Regras:
       const userContent = `Título: ${chapter.title || "Sem título"}\nConteúdo: ${chapter.content || ""}`;
 
       let response;
-      const modelsToTry = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-pro'];
+      const modelsToTry = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-pro'];
       
       for (let i = 0; i < modelsToTry.length; i++) {
         try {
@@ -237,7 +237,7 @@ Regras:
         } catch (err: any) {
           console.warn(`[IA] Falha com o modelo API ${modelsToTry[i]}:`, err.message || err);
           if (i === modelsToTry.length - 1) {
-             throw new Error("A cota de uso expirou para todos os modelos gratuitos configurados.");
+             throw new Error(err.message || "A cota de uso expirou ou ocorreu uma falha ao conectar com o Gemini.");
           }
         }
       }
