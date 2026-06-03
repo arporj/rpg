@@ -59,7 +59,7 @@ export function ChapterModal({ chapter: initialChapter, chronicleId, onSave, onC
       >
         <div className="flex justify-between items-center mb-6 border-b border-gold/10 pb-4">
           <h3 className="font-cinzel text-gold text-xl uppercase tracking-widest">
-            {initialChapter.title === 'Novo Capítulo' ? 'Criar Capítulo' : 'Editar Capítulo'}
+            {initialChapter.title === 'Novo Capítulo' ? 'Criar Capítulo' : 'Editar Capítulo'} {chapter.order_index}
           </h3>
           <button onClick={onClose} className="text-neutral-500 hover:text-white transition-colors">
             <X size={24} />
@@ -68,6 +68,17 @@ export function ChapterModal({ chapter: initialChapter, chronicleId, onSave, onC
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           <div className="space-y-6">
+            <div>
+              <label className="text-[10px] text-gold/60 font-bold uppercase tracking-widest block mb-2">Número do Capítulo</label>
+              <input 
+                type="number"
+                min="1"
+                value={chapter.order_index}
+                onChange={(e) => setChapter({ ...chapter, order_index: Math.max(1, parseInt(e.target.value, 10) || 1) })}
+                className="w-full bg-neutral-900/50 text-parchment font-cinzel text-xl border border-neutral-700 focus:border-gold outline-none p-4 rounded transition-all"
+              />
+            </div>
+
             <div>
               <label className="text-[10px] text-gold/60 font-bold uppercase tracking-widest block mb-2">Título do Capítulo</label>
               <input 

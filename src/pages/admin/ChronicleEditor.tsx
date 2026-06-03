@@ -527,7 +527,7 @@ Regras:
         title: 'Novo Capítulo',
         content: '',
         image_url: '',
-        order_index: (session.chapters?.length || 0)
+        order_index: (session.chapters?.length || 0) + 1
       }).select().single();
 
       if (error) throw error;
@@ -569,8 +569,8 @@ Regras:
       return;
     }
 
-    const updated = chapters.map((c, i) => ({ ...c, order_index: i }));
-    setSessions(sessions.map(s => s.id === sessionId ? { ...s, chapters: updated } : s));
+    const updated = chapters.map((c: Chapter, i: number) => ({ ...c, order_index: i + 1 }));
+    setSessions(sessions.map((s: Session) => s.id === sessionId ? { ...s, chapters: updated } : s));
     setIsDirty({ ...isDirty, sessions: true });
   };
 
@@ -758,7 +758,7 @@ Regras:
                                           <button onClick={() => moveChapter(session.id, chapter.id, 'up')} className="text-neutral-600 hover:text-gold"><ChevronUp size={14}/></button>
                                           <button onClick={() => moveChapter(session.id, chapter.id, 'down')} className="text-neutral-600 hover:text-gold"><ChevronDown size={14}/></button>
                                         </div>
-                                        <span className="text-parchment font-cinzel">{chapter.title}</span>
+                                        <span className="text-parchment font-cinzel">Capítulo {chapter.order_index} — {chapter.title}</span>
                                         {chapter.image_url && <ImageIcon size={14} className="text-gold/40"/>}
                                      </div>
                                      <div className="flex gap-2">
@@ -1171,15 +1171,39 @@ Regras:
              onSave={async (updated) => {
                if (!(await checkSession())) return;
                setSaving(true);
-               const { error } = await supabase.from('chapters').update({
-                 title: updated.title,
-                 content: updated.content,
-                 image_url: updated.image_url
-               }).eq('id', updated.id);
-
-               if (!error) {
-                 setSessions(sessions.map(s => s.id === editingChapter.sessionId ? { ...s, chapters: s.chapters?.map(c => c.id === updated.id ? updated : c) } : s));
-                 setEditingChapter(null);
+               
+               const session = sessions.find((s: Session) => s.id === editingChapter.sessionId);
+               if (session && session.chapters) {
+                 const otherChapters = session.chapters
+                   .filter((c: Chapter) => c.id !== updated.id)
+                   .sort((a: Chapter, b: Chapter) => a.order_index - b.order_index);
+                 
+                 const targetIndex = Math.max(0, Math.min(updated.order_index - 1, otherChapters.length));
+                 otherChapters.splice(targetIndex, 0, updated);
+                 
+                 const finalChapters = otherChapters.map((c: Chapter, i: number) => ({
+                   ...c,
+                   order_index: i + 1
+                 }));
+                 
+                 const { error } = await supabase.from('chapters').upsert(
+                   finalChapters.map((ch: Chapter) => ({
+                     id: ch.id,
+                     session_id: ch.session_id,
+                     title: ch.title,
+                     content: ch.content,
+                     image_url: ch.image_url,
+                     order_index: ch.order_index
+                   }))
+                 );
+                 
+                 if (!error) {
+                   setSessions(sessions.map((s: Session) => s.id === editingChapter.sessionId ? { ...s, chapters: finalChapters } : s));
+                   setEditingChapter(null);
+                   showToast('Capítulo salvo e ordenado!');
+                 } else {
+                   handleAuthOrTechnicalError(error, 'Falha ao salvar capítulo');
+                 }
                }
                setSaving(false);
              }}

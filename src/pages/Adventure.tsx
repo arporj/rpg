@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase, getStorageUrl } from '../lib/supabase';
-import { Chronicle, Session, Player } from '../types';
+import { Chronicle, Session, Player, Chapter } from '../types';
 import { Loader2, Scroll, Ghost, Skull, Sword, Users, Info, X, CheckCircle2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { SubscribeBox } from '../components/SubscribeBox';
@@ -232,12 +232,12 @@ export default function Adventure() {
               </div>
 
               <div className="space-y-20 md:space-y-32">
-                {activeSession.chapters?.sort((a: any, b: any) => a.order_index - b.order_index).map((chapter, idx) => (
+                {activeSession.chapters?.sort((a: Chapter, b: Chapter) => a.order_index - b.order_index).map((chapter: Chapter) => (
                   <article key={chapter.id} className="space-y-8 relative group">
                     <div className="flex items-center gap-4 mb-6 md:mb-8">
                        <div className="h-[1px] flex-1 bg-gradient-to-r from-transparent to-gold/30" />
                        <h3 className="font-cinzel text-xl md:text-2xl text-gold/80 px-2 md:px-4 text-center">
-                         Capítulo {idx + 1} <span className="hidden sm:inline">—</span> <br className="sm:hidden" /> {chapter.title}
+                         Capítulo {chapter.order_index} <span className="hidden sm:inline">—</span> <br className="sm:hidden" /> {chapter.title}
                        </h3>
                        <div className="h-[1px] flex-1 bg-gradient-to-l from-transparent to-gold/30" />
                     </div>
